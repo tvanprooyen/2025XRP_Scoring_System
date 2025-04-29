@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XRP Orbit Odyssey | Score Keeping System</title>
+    <!-- Link to local Font Awesome CSS -->
+    <link rel="stylesheet" href="assets/font-awesome/css/all.min.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .tabs {
+            display: flex;
+            justify-content: center;
+            background-color: #f1f1f1;
+            border-bottom: 1px solid #ccc;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 18px;
+            text-align: center;
+            flex: 1;
+            background-color: #e0e0e0;
+            border: 1px solid #ccc;
+            border-bottom: none;
+        }
+        .tab.active {
+            background-color: #ffffff;
+            font-weight: bold;
+        }
+        .content {
+            flex: 1;
+            display: none;
+            padding: 20px;
+        }
+        .content.active {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: stretch;
+        }
+        .team-section {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            border: 1px solid #ccc;
+        }
+        .team-section.red {
+            background-color: #ffcccc;
+        }
+        .team-section.blue {
+            background-color: #cce5ff;
+        }
+        .sub-section {
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        .sub-section h3 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .sub-section h4{
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .button {
+            width: 120px;
+            height: 120px;
+            font-size: 16px;
+            text-align: center;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .button:active {
+            background-color: #0056b3;
+        }
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background-color: #f1f1f1;
+            padding: 10px 0;
+            border-top: 1px solid #ccc;
+        }
+        .score {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .timer {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .match-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background-color: #f1f1f1;
+            border-bottom: 1px solid #ccc;
+        }
+        .control-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .control-button:active {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <!-- Match Controls Section -->
+    <div class="match-controls" style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
+        <!-- Left-aligned Start and Stop Match buttons -->
+        <div style="display: flex; gap: 10px;">
+            <button class="control-button" id="start-match" onclick="startMatch()">Start Match</button>
+            <button class="control-button" id="stop-match" onclick="stopMatch()">Stop Match</button>
+        </div>
+
+        <!-- Centered Match Number controls -->
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <label for="match-number">Match Number:</label>
+            <button class="control-button" onclick="decreaseMatchNumber()">
+                <i class="fas fa-arrow-down"></i>
+            </button>
+            <input type="number" id="match-number" placeholder="Enter Match #" min="0" style="text-align: center;" />
+            <button class="control-button" onclick="increaseMatchNumber()">
+                <i class="fas fa-arrow-up"></i>
+            </button>
+        </div>
+
+        <!-- Right-aligned Open Viewer button -->
+        <div>
+            <button onclick="openViewer()" class="control-button">Open Viewer</button>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab" onclick="showTab('match-ready')">Ready</div>
+        <div class="tab" onclick="showTab('auto')">Auto</div>
+        <div class="tab" onclick="showTab('auto-to-teleop')">Auto to Teleop</div>
+        <div class="tab" onclick="showTab('teleop')">Teleop</div>
+        <div class="tab" onclick="showTab('endgame')">End Game</div>
+        <div class="tab" onclick="showTab('game-over')">Game Over</div>
+    </div>
+
+    <div id="match-ready" class="content active">
+        <h2>Match Ready</h2>
+        <p>Prepare for the match. Ensure all systems are ready.</p>
+    </div>
+
+    <div id="auto" class="content">
+        <!-- Red Alliance Section -->
+        <div class="team-section red" id="red-alliance">
+            <div class="sub-section">
+                <h4>Penalties</h4>
+                <div class="button-container">
+                    <button class="button" onclick="addScore('bluePoints', 2, 'Ticket Penalty')">Ticket <br> (-2)</button>
+                    <button class="button" onclick="redCardPenalty('bluePoints')">Red<br>Card</button>
+                </div>
+                <h4>Auto Points</h4>
+                <div class="button-container">
+                    <button class="button" onclick="addScore('redPoints', 1, 'Rubble Low')">Rubble<br>Low (+1)</button>
+                    <button class="button" onclick="addScore('redPoints', 3, 'Rubble High')">Rubble<br>High (+3)</button>
+                    <button class="button" onclick="addScore('redPoints', 5, 'Low Parking')">Low<br>Parking (+5)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Blue Alliance Section -->
+        <div class="team-section blue" id="blue-alliance">
+            <div class="sub-section">
+                <h4>Penalties</h4>
+                <div class="button-container">
+                    <button class="button" onclick="addScore('redPoints', 2, 'Ticket Penalty')">Ticket <br> (-2)</button>
+                    <button class="button" onclick="redCardPenalty('redPoints')">Red<br>Card</button>
+                </div>
+                <h4>Auto Points</h4>
+                <div class="button-container">
+                    <button class="button" onclick="addScore('bluePoints', 1, 'Rubble Low')">Rubble<br>Low (+1)</button>
+                    <button class="button" onclick="addScore('bluePoints', 3, 'Rubble High')">Rubble<br>High (+3)</button>
+                    <button class="button" onclick="addScore('bluePoints', 5, 'Low Parking')">Low<br>Parking (+5)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="auto-to-teleop" class="content">
+        <h2>Auto to Teleop Transition</h2>
+        <p>Transitioning from Auto to Teleop. Prepare for the next phase.</p>
+    </div>
+
+    <div id="teleop" class="content">
+        <!-- Teleop content for Red and Blue Alliance -->
+        <div class="team-section red">
+            <div class="sub-section">
+                <h4>Penalties</h4>
+                <div class="button-container">
+                    <button class="button" onclick="addScore('bluePoints', 2, 'Ticket Penalty')">Ticket <br> (-2)</button>
+                    <button class="button" onclick="redCardPenalty('bluePoints')">Red<br>Card</button>
+                </div>
+                <h4>Teleop Points</h4>
+                <div class="button-container">
+                    <button class="button" onclick="addScore('redPoints', 1, 'Rubble Low')">Rubble<br>Low (+1)</button>
+                    <button class="button" onclick="addScore('redPoints', 3, 'Rubble High')">Rubble<br>High (+3)</button>
+                    <button class="button" onclick="addScore('redPoints', 5, 'Orbit')">Orbit<br>(+5)</button>
+                    <button class="button" onclick="addScore('redPoints', 8, 'Orbit With Amplifier')">Orbit<br>With Amplifier<br>(+8)</button>
+                </div>
+            </div>
+        </div>
+        <div class="team-section blue">
+            <div class="sub-section">
+                <h4>Penalties</h4>
+                <div class="button-container">
+                    <button class="button" onclick="addScore('redPoints', 2, 'Ticket Penalty')">Ticket <br> (-2)</button>
+                    <button class="button" onclick="redCardPenalty('redPoints')">Red<br>Card</button>
+                </div>
+                <h4>Teleop Points</h4>
+                <div class="button-container">
+                    <button class="button" onclick="addScore('bluePoints', 1, 'Rubble Low')">Rubble<br>Low (+1)</button>
+                    <button class="button" onclick="addScore('bluePoints', 3, 'Rubble High')">Rubble<br>High (+3)</button>
+                    <button class="button" onclick="addScore('bluePoints', 5, 'Orbit')">Orbit<br>(+5)</button>
+                    <button class="button" onclick="addScore('bluePoints', 8, 'Orbit With Amplifier')">Orbit<br>With Amplifier<br>(+8)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="endgame" class="content">
+        <!-- End Game content for Red and Blue Alliance -->
+        <div class="team-section red">
+            <div class="sub-section">
+                <h4>Penalties</h4>
+                <div class="button-container">
+                    <button class="button" onclick="addScore('bluePoints', 2, 'Ticket Penalty')">Ticket <br> (-2)</button>
+                    <button class="button" onclick="redCardPenalty('bluePoints')">Red<br>Card</button>
+                </div>
+                <h4>Teleop Points</h4>
+                <div class="button-container">
+                    <button class="button" onclick="addScore('redPoints', 1, 'Rubble Low')">Rubble<br>Low (+1)</button>
+                    <button class="button" onclick="addScore('redPoints', 3, 'Rubble High')">Rubble<br>High (+3)</button>
+                    <button class="button" onclick="addScore('redPoints', 5, 'Orbit')">Orbit<br>(+5)</button>
+                    <button class="button" onclick="addScore('redPoints', 8, 'Orbit With Amplifier')">Orbit<br>With Amplifier<br>(+8)</button>
+                </div>
+                <h4>End Game Points</h4>
+                <div class="button-container">
+                    <button class="button" onclick="addScore('redPoints', 10, 'Amplifier Returned')">Amplifier<br>Returned<br>(+10)</button>
+                    <button class="button" onclick="addScore('redPoints', 5, 'Low Parking')">Low<br>Parking<br>(+5)</button>
+                    <button class="button" onclick="addScore('redPoints', 10, 'Coopertition Bonus')">Coopertition<br>Bonus<br>(+10)</button>
+                </div>
+            </div>
+        </div>
+        <div class="team-section blue">
+            <div class="sub-section">
+                <h4>Penalties</h4>
+                <div class="button-container">
+                    <button class="button" onclick="addScore('redPoints', 2, 'Ticket Penalty')">Ticket <br> (-2)</button>
+                    <button class="button" onclick="redCardPenalty('redPoints')">Red<br>Card</button>
+                </div>
+                <h4>Teleop Points</h4>
+                <div class="button-container">
+                    <button class="button" onclick="addScore('bluePoints', 1, 'Rubble Low')">Rubble<br>Low (+1)</button>
+                    <button class="button" onclick="addScore('bluePoints', 3, 'Rubble High')">Rubble<br>High (+3)</button>
+                    <button class="button" onclick="addScore('bluePoints', 5, 'Orbit')">Orbit<br>(+5)</button>
+                    <button class="button" onclick="addScore('bluePoints', 8, 'Orbit With Amplifier')">Orbit<br>With Amplifier<br>(+8)</button>
+                </div>
+                <h4>End Game Points</h4>
+                <div class="button-container">
+                    <button class="button" onclick="addScore('bluePoints', 10, 'Amplifier Returned')">Amplifier<br>Returned<br>(+10)</button>
+                    <button class="button" onclick="addScore('bluePoints', 5, 'Low Parking')">Low<br>Parking<br>(+5)</button>
+                    <button class="button" onclick="addScore('bluePoints', 10, 'Coopertition Bonus')">Coopertition<br>Bonus<br>(+10)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-over" class="content">
+        <!-- Red Alliance Score Review -->
+        <div class="team-section red">
+            <div id="red-score-log">
+                <!-- Red Alliance score log will be dynamically populated here -->
+            </div>
+            <div style="margin-top: 20px;">
+                <label for="red-total-score">Adjust Total Score:</label>
+                <input type="number" id="red-total-score" value="0" onchange="adjustTotalScore('red')">
+            </div>
+        </div>
+
+        <!-- Blue Alliance Score Review -->
+        <div class="team-section blue">
+            <div id="blue-score-log">
+                <!-- Blue Alliance score log will be dynamically populated here -->
+            </div>
+            <div style="margin-top: 20px;">
+                <label for="blue-total-score">Adjust Total Score:</label>
+                <input type="number" id="blue-total-score" value="0" onchange="adjustTotalScore('blue')">
+            </div>
+        </div>
+
+        <!-- <button class="control-button" onclick="saveAdjustedScores()">Save Adjusted Scores</button> -->
+    </div>
+
+    <div class="scoreboard">
+        <div class="score" id="red-score">Red Points: 0</div>
+        <div class="timer" id="game-timer">Time Left: 2:40</div>
+        <div class="score" id="blue-score">Blue Points: 0</div>
+    </div>
+
+    <audio id="match-failed" src="assets/sounds/match-failed.mp3"></audio>
+
+    <script>
+        let scores = { redPoints: 0, bluePoints: 0 };
+        let gameTime = 160; // Total game time in seconds (2 minutes 40 seconds)
+        let timerInterval;
+        let currentMode = 'match-ready'; // Default mode
+        let matchNumber = 0;
+
+        // Log object to track scoring events and penalties
+        let scoreLog = {
+            red: [],
+            blue: []
+        };
+
+        function saveToLocalStorage() {
+            localStorage.setItem('scores', JSON.stringify(scores));
+            localStorage.setItem('gameTime', gameTime);
+            localStorage.setItem('gameMode', currentMode); // Save the current mode
+            localStorage.setItem('matchNumber', matchNumber); // Save the match number
+            localStorage.setItem('scoreLog', JSON.stringify(scoreLog)); // Save the score log
+        }
+
+        function addScore(type, value, description = '') {
+            scores[type] += value;
+            document.getElementById(`${type === 'redPoints' ? 'red-score' : 'blue-score'}`).textContent = `${type === 'redPoints' ? 'Red Points' : 'Blue Points'}: ${scores[type]}`;
+
+            // Log the score
+            const alliance = type === 'redPoints' ? 'red' : 'blue';
+            scoreLog[alliance].push({
+                time: gameTime,
+                value: value,
+                description: description || 'Score added'
+            });
+
+            saveToLocalStorage();
+        }
+
+        function redCardPenalty(type) {
+            scores[type] = 0;
+            document.getElementById(`${type === 'redPoints' ? 'red-score' : 'blue-score'}`).textContent = `${type === 'redPoints' ? 'Red Points' : 'Blue Points'}: ${scores[type]}`;
+            const buttons = document.querySelectorAll(`.team-section.${type === 'redPoints' ? 'red' : 'blue'} .button-container button`);
+            buttons.forEach(button => {
+                button.disabled = true;
+                button.style.backgroundColor = '#ccc';
+                button.style.cursor = 'not-allowed';
+            });
+
+            // Log the penalty
+            const alliance = type === 'redPoints' ? 'red' : 'blue';
+            scoreLog[alliance].push({
+                time: gameTime,
+                value: 0,
+                description: 'Red Card Penalty'
+            });
+
+            // Save red card status to localStorage
+            const redCardStatus = type === 'redPoints' ? 'Red Alliance' : 'Blue Alliance';
+            localStorage.setItem('redCard', redCardStatus);
+
+            document.getElementById('match-failed').play().catch((error) => {
+                console.error('Audio playback failed:', error);
+            });
+
+            saveToLocalStorage();
+
+            stopMatchRedCard();
+        }
+
+        function showTab(tabId) {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.content');
+
+            tabs.forEach(tab => tab.classList.remove('active'));
+            contents.forEach(content => content.classList.remove('active'));
+
+            document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+
+            currentMode = tabId; // Update the current mode
+
+            // Reset scores and timer if switching to "match-ready"
+            if (tabId === 'match-ready') {
+                gameTime = 160; // Reset to 2 minutes 40 seconds
+                scores = { redPoints: 0, bluePoints: 0 };
+
+                // Update the UI
+                document.getElementById('game-timer').textContent = 'Time Left: 2:40';
+                document.getElementById('red-score').textContent = 'Red Points: 0';
+                document.getElementById('blue-score').textContent = 'Blue Points: 0';
+
+                // Clear the score log
+                scoreLog = { red: [], blue: [] };
+                document.getElementById('red-score-log').innerHTML = '<p>No scores logged yet.</p>';
+                document.getElementById('blue-score-log').innerHTML = '<p>No scores logged yet.</p>';
+                localStorage.removeItem('scoreLog');
+
+                // Clear any disabled buttons
+                const disabledButtons = document.querySelectorAll('.button-container button[disabled]');
+                disabledButtons.forEach(button => {
+                    button.disabled = false;
+                    button.style.backgroundColor = ''; // Reset to default
+                    button.style.cursor = 'pointer';
+                });
+
+                // Clear the red card status
+                localStorage.removeItem('redCard');
+            }
+
+            saveToLocalStorage();
+        }
+
+        function startGameTimer() {
+            timerInterval = setInterval(() => {
+                if (gameTime <= 0) {
+                    clearInterval(timerInterval);
+                    showTab('game-over'); // Switch to "Game Over" tab
+                    currentMode = 'game-over'; // Set mode to "game over"
+
+                    // Clear the red card status when the match ends
+                    localStorage.removeItem('redCard');
+
+                    saveToLocalStorage();
+                    return;
+                }
+
+                gameTime--;
+                saveToLocalStorage();
+
+                // Update timer display
+                const minutes = Math.floor(gameTime / 60);
+                const seconds = gameTime % 60;
+                document.getElementById('game-timer').textContent = `Time Left: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+                // Handle phase transitions
+                if (gameTime === 130) { // After 30 seconds, switch to auto-to-teleop transition
+                    showTab('auto-to-teleop');
+                } else if (gameTime === 120) { // After 40 seconds, switch to teleop
+                    showTab('teleop');
+                } else if (gameTime === 30) { // When 30 seconds remain, switch to endgame
+                    showTab('endgame');
+                    populateScoreLog(); // Populate score log for endgame
+                }
+            }, 1000);
+        }
+
+        function startMatch() {
+            const matchInput = document.getElementById('match-number');
+            matchNumber = parseInt(matchInput.value, 10) || 0;
+
+            if (matchNumber <= 0) {
+                alert('Please enter a valid match number.');
+                return;
+            }
+
+            // Clear previous scores and logs
+            scores = { redPoints: 0, bluePoints: 0 };
+            scoreLog = { red: [], blue: [] };
+            document.getElementById('red-score-log').innerHTML = '<p>No scores logged yet.</p>';
+            document.getElementById('blue-score-log').innerHTML = '<p>No scores logged yet.</p>';
+            localStorage.removeItem('scoreLog');
+
+            //reset the timer
+            gameTime = 160; // Reset to 2 minutes 40 seconds
+
+            document.getElementById('game-timer').textContent = 'Time Left: 2:40';
+            document.getElementById('red-score').textContent = 'Red Points: 0';
+            document.getElementById('blue-score').textContent = 'Blue Points: 0';
+
+            saveToLocalStorage();
+
+            // Switch to the "Auto" tab
+            showTab('auto');
+
+            // Start the game timer
+            startGameTimer();
+            alert(`Press ok to start match #${matchNumber}. Count Down (3,2,1 Go!)`);
+        }
+
+        function stopMatchRedCard() {
+            clearInterval(timerInterval);
+
+            // Reset the timer and scores
+            gameTime = 160; // Reset to 2 minutes 40 seconds
+        }
+
+        function stopMatch() {
+            // Clear the timer
+            clearInterval(timerInterval);
+
+            // Reset the timer and scores
+            gameTime = 160; // Reset to 2 minutes 40 seconds
+            scores = { redPoints: 0, bluePoints: 0 };
+
+            // Update the UI
+            document.getElementById('game-timer').textContent = 'Time Left: 2:40';
+            document.getElementById('red-score').textContent = 'Red Points: 0';
+            document.getElementById('blue-score').textContent = 'Blue Points: 0';
+
+            // Clear any disabled buttons
+            const disabledButtons = document.querySelectorAll('.button-container button[disabled]');
+            disabledButtons.forEach(button => {
+                button.disabled = false;
+                button.style.backgroundColor = ''; // Reset to default
+                button.style.cursor = 'pointer';
+            });
+
+            // Clear the red card status
+            localStorage.removeItem('redCard');
+
+            // Reset the current mode and save to localStorage
+            currentMode = 'match-ready';
+            showTab('match-ready'); // Switch to "Match Ready" tab
+            saveToLocalStorage();
+
+            alert(`Match ${matchNumber} stopped and reset.`);
+        }
+
+        // Function to open viewer.html in a new window
+        function openViewer() {
+            window.open('viewer.html', '_blank', 'width=800,height=600');
+        }
+
+        // Add this function to handle match number updates
+        function updateMatchNumber() {
+            const matchInput = document.getElementById('match-number');
+            matchNumber = parseInt(matchInput.value, 10) || 0;
+            saveToLocalStorage();
+        }
+
+        function increaseMatchNumber() {
+            const matchInput = document.getElementById('match-number');
+            matchInput.value = parseInt(matchInput.value || 0, 10) + 1;
+            updateMatchNumber();
+        }
+
+        function decreaseMatchNumber() {
+            const matchInput = document.getElementById('match-number');
+            const currentValue = parseInt(matchInput.value || 0, 10);
+            if (currentValue > 0) {
+                matchInput.value = currentValue - 1;
+                updateMatchNumber();
+            }
+        }
+
+        // Attach the input event listener to the match number field
+        document.getElementById('match-number').addEventListener('input', updateMatchNumber);
+
+        // Start the timer when the page loads
+        window.onload = () => {
+            saveToLocalStorage();
+        };
+
+        window.addEventListener('message', (event) => {
+            if (event.data.action === 'playSound') {
+                const mode = event.data.mode;
+                const sounds = {
+                    auto: document.getElementById('auto-sound'),
+                    teleop: document.getElementById('teleop-sound'),
+                    endgame: document.getElementById('endgame-sound'),
+                    gameover: document.getElementById('gameover-sound')
+                };
+
+                if (sounds[mode]) {
+                    sounds[mode].play().catch((error) => {
+                        console.error('Audio playback failed:', error);
+                    });
+                }
+            }
+        });
+
+        function reviewScores() {
+            console.log('Score Log:', scoreLog);
+            alert('Score log has been printed to the console for review.');
+        }
+
+        function adjustTotalScore(alliance) {
+            const inputId = alliance === 'red' ? 'red-total-score' : 'blue-total-score';
+            const inputElement = document.getElementById(inputId);
+            const newScore = parseInt(inputElement.value, 10) || 0;
+
+            // Update the score for the selected alliance
+            if (alliance === 'red') {
+                scores.redPoints = newScore;
+            } else if (alliance === 'blue') {
+                scores.bluePoints = newScore;
+            }
+
+            // Update the displayed scores
+            updateDisplayedScores();
+            saveToLocalStorage();
+        }
+
+        function updateDisplayedScores() {
+            document.getElementById('red-score').textContent = `Red Points: ${scores.redPoints}`;
+            document.getElementById('blue-score').textContent = `Blue Points: ${scores.bluePoints}`;
+        }
+
+        function populateScoreLog() {
+            const redLogContainer = document.getElementById('red-score-log');
+            const blueLogContainer = document.getElementById('blue-score-log');
+
+            // Clear existing logs
+            redLogContainer.innerHTML = '';
+            blueLogContainer.innerHTML = '';
+
+            // Populate Red Alliance log
+            if (scoreLog.red.length === 0) {
+                redLogContainer.innerHTML = '<p>No scores logged yet.</p>';
+            } else {
+                scoreLog.red.forEach((entry, index) => {
+                    const logItem = document.createElement('div');
+                    logItem.style.display = 'flex';
+                    logItem.style.alignItems = 'center';
+                    logItem.style.marginBottom = '10px';
+
+                    logItem.innerHTML = `
+                        <span style="flex: 1;">${entry.description} (+${entry.value})</span>
+                        &nbsp;&nbsp;<button class="control-button" style="background-color: red; color: white;" onclick="removeScore('red', ${index})">X</button>
+                    `;
+                    redLogContainer.appendChild(logItem);
+                });
+            }
+
+            // Populate Blue Alliance log
+            if (scoreLog.blue.length === 0) {
+                blueLogContainer.innerHTML = '<p>No scores logged yet.</p>';
+            } else {
+                scoreLog.blue.forEach((entry, index) => {
+                    const logItem = document.createElement('div');
+                    logItem.style.display = 'flex';
+                    logItem.style.alignItems = 'center';
+                    logItem.style.marginBottom = '10px';
+
+                    logItem.innerHTML = `
+                        <span style="flex: 1;">${entry.description} (+${entry.value})</span>
+                        &nbsp;&nbsp;<button class="control-button" style="background-color: red; color: white;" onclick="removeScore('blue', ${index})">X</button>
+                    `;
+                    blueLogContainer.appendChild(logItem);
+                });
+            }
+
+            // Update the manual adjustment inputs with the current total scores
+            document.getElementById('red-total-score').value = scores.redPoints;
+            document.getElementById('blue-total-score').value = scores.bluePoints;
+        }
+
+        function removeScore(alliance, index) {
+            // Remove the score from the log
+            scoreLog[alliance].splice(index, 1);
+
+            // Recalculate total scores
+            recalculateScores();
+
+            // Repopulate the score log
+            populateScoreLog();
+        }
+
+        function saveAdjustedScores() {
+            // Update Red Alliance scores
+            const redInputs = document.querySelectorAll('#red-score-log input');
+            redInputs.forEach(input => {
+                const index = input.getAttribute('data-index');
+                const newValue = parseInt(input.value, 10) || 0;
+                scoreLog.red[index].value = newValue;
+            });
+
+            // Update Blue Alliance scores
+            const blueInputs = document.querySelectorAll('#blue-score-log input');
+            blueInputs.forEach(input => {
+                const index = input.getAttribute('data-index');
+                const newValue = parseInt(input.value, 10) || 0;
+                scoreLog.blue[index].value = newValue;
+            });
+
+            // Recalculate total scores
+            recalculateScores();
+
+            alert('Scores have been adjusted and saved.');
+        }
+
+        function recalculateScores() {
+            scores.redPoints = scoreLog.red.reduce((total, entry) => total + entry.value, 0);
+            scores.bluePoints = scoreLog.blue.reduce((total, entry) => total + entry.value, 0);
+
+            // Update the displayed scores
+            updateDisplayedScores();
+            saveToLocalStorage();
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        }
+
+        // Call populateScoreLog when the "Game Over" tab is shown
+        document.querySelector('.tab[onclick="showTab(\'game-over\')"]').addEventListener('click', populateScoreLog);
+    </script>
+</body>
+</html>
