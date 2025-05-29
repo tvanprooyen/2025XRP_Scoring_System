@@ -159,6 +159,7 @@
         <!-- Right-aligned Open Viewer button -->
         <div>
             <button onclick="openViewer()" class="control-button">Open Viewer</button>
+            <button onclick="openStreamViewer()" class="control-button">Open Stream Viewer</button>
         </div>
     </div>
 
@@ -504,12 +505,13 @@
 
             saveToLocalStorage();
 
+            alert(`Press ok to start match #${matchNumber}. Count Down (3,2,1 Go!)`);
+
             // Switch to the "Auto" tab
             showTab('auto');
 
             // Start the game timer
             startGameTimer();
-            alert(`Press ok to start match #${matchNumber}. Count Down (3,2,1 Go!)`);
         }
 
         function stopMatchRedCard() {
@@ -554,6 +556,10 @@
         // Function to open viewer.html in a new window
         function openViewer() {
             window.open('viewer.html', '_blank', 'width=800,height=600');
+        }
+
+        function openStreamViewer() {
+            window.open('viewer_stream.html', '_blank', 'width=800,height=600');
         }
 
         // Add this function to handle match number updates

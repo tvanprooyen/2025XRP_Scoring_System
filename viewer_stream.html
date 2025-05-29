@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Score Viewer</title>
+    <!-- Link to the local Font Awesome CSS -->
+    <link rel="stylesheet" href="assets/font-awesome/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+            background-color: #f4f4f9;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: stretch;
+            text-align: center;
+        }
+        .pink-area {
+            flex: 0 0 80vh;
+            min-height: 80vh;
+            background: magenta;
+            width: 100vw;
+        }
+        .bottom-bar {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            justify-content: space-between;
+            width: 100vw;
+            min-height: 250px;
+            background: #fff;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            padding: 0 40px;
+            box-sizing: border-box;
+        }
+        .score {
+            font-size: 2.5vw;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 200px;
+            justify-content: center;
+        }
+        .score.red {
+            color: #ff4d4d;
+            justify-content: flex-start;
+        }
+        .score.blue {
+            color: #4d79ff;
+            justify-content: flex-end;
+        }
+        .center-info {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .match-info, .timer, .mode {
+            margin: 0;
+            padding: 0;
+        }
+        .match-info {
+            font-size: 1.5vw;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .timer {
+            font-size: 5vw;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .mode {
+            font-size: 2vw;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        #red-card {
+            font-size: 1.5vw;
+            font-weight: bold;
+            color: #FF0000;
+            margin-bottom: 10px;
+        }
+        .icon {
+            font-size: inherit; /* Match the font size of the parent element */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Pink area (80% of screen height) -->
+    <div class="pink-area"></div>
+
+    <!-- Centered game info and scoreboard bar at the bottom -->
+    <div class="bottom-bar" id="bottom-bar">
+        <div class="score red" id="red-score">
+            <i class="fas fa-flag icon"></i> Red Points: 0
+        </div>
+        <div class="center-info">
+            <div class="match-info" id="match-info">
+                <i class="fas fa-info-circle icon"></i> Match: Waiting to Start
+            </div>
+            <div class="timer" id="game-timer">
+                <i class="fas fa-clock icon"></i> 2:30
+            </div>
+            <div class="mode" id="game-mode">
+                <i class="fas fa-gamepad icon"></i> Auto
+            </div>
+            <div id="red-card" style="display: none; font-size: 24px; font-weight: bold; color: #FF0000; margin-bottom: 20px;">
+                <!-- Red card status will be displayed here -->
+            </div>
+        </div>
+        <div class="score blue" id="blue-score">
+            <i class="fas fa-flag icon"></i> Blue Points: 0
+        </div>
+    </div>
+
+    <!-- Fullscreen Button -->
+    <div id="fullscreen-container" style="
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        z-index: 1000;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        transition: opacity 0.3s;
+    " onmouseover="showFullscreenButton()" onmouseout="hideFullscreenButton()">
+        <button id="fullscreen-button" onclick="toggleFullscreen()" style="
+            padding: 10px;
+            font-size: 24px; /* Larger font size */
+            font-weight: bold; /* Make it bold */
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+        ">
+            <i class="fas fa-expand"></i> <!-- Font Awesome fullscreen icon -->
+        </button>
+    </div>
+
+    <script>
+        let lastMode = '';
+
+        function flashBackgroundForMode(mode) {
+            if (mode === lastMode) return; // Prevent flashing if the mode hasn't changed
+            lastMode = mode;
+
+
+            console.log('Mode:', mode); // Debug mode
+            const bottombar = document.getElementById('bottom-bar');
+            const colors = {
+                auto: '#FFD700', // Gold for Autonomous
+                teleop: '#00FF00', // Green for Teleop
+                endgame: '#0000FF', // Blue for Endgame
+                gameover: '#FF0000' // Red for Game Over
+            };
+
+            const textColors = {
+                auto: '#000000', // Black for Gold background
+                teleop: '#000000', // Black for Green background
+                endgame: '#FFFFFF', // White for Blue background
+                gameover: '#FFFFFF' // White for Red background
+            };
+
+            if (colors[mode]) {
+                // Change background color
+                bottombar.style.backgroundColor = colors[mode];
+
+                // Change text color for better contrast
+                //.timer text color
+                const timer = document.getElementById('game-timer');
+                //Match Info text color
+                const matchInfo = document.getElementById('match-info');
+                //Game Mode text color
+                const gameMode = document.getElementById('game-mode');
+
+                //Red Points and Blue Points Outline Text Color
+                const redScore = document.getElementById('red-score');
+                const blueScore = document.getElementById('blue-score');
+
+                timer.style.color = textColors[mode];
+                matchInfo.style.color = textColors[mode];
+                gameMode.style.color = textColors[mode];
+                timer.style.color = textColors[mode];
+                redScore.style.color = textColors[mode];
+                blueScore.style.color = textColors[mode];
+
+                let timeout = 2000; // Default duration for flashing
+
+                if (mode === 'gameover') {
+                    timeout = 3000; // Longer duration for game over
+                }
+
+                setTimeout(() => {
+                    // Revert to default background and text color
+                    bottombar.style.backgroundColor = '#f4f4f9';
+                    timer.style.color = '#333'; // Default text color
+                    matchInfo.style.color = '#333'; // Default text color
+                    gameMode.style.color = '#333'; // Default text color
+                    
+                    redScore.style.color = '#ff4d4d'; // Default text color
+                    blueScore.style.color = '#4d79ff'; // Default text color
+                }, timeout);
+            } else {
+                console.error('Invalid mode:', mode);
+            }
+        }
+
+        function updateScoresAndTime() {
+            const scores = JSON.parse(localStorage.getItem('scores')) || { redPoints: 0, bluePoints: 0 };
+            let gameTime = localStorage.getItem('gameTime') || 150;
+            let gameMode = localStorage.getItem('gameMode') || 'auto';
+            const matchNumber = localStorage.getItem('matchNumber') || 'Waiting to Start';
+            const redCard = localStorage.getItem('redCard') || null;
+
+            if (gameMode == "auto-to-teleop") {
+                gameMode = "Pick Up Your Controllers!";
+            } else if (gameMode == "match-ready") {
+                gameMode = "Match Ready";
+            } else if (gameMode == "game-over") {
+                gameMode = "Game Over";
+            }
+
+            let gameModeIcon = `<i class="fas fa-gamepad icon"></i>`;
+
+            if( gameMode == "Pick Up Your Controllers!") {
+                gameModeIcon = `<i class="fas fa-gamepad icon"></i>`;
+            } else if (gameMode == "Match Ready") {
+                gameModeIcon = `<i class="fas fa-check-circle icon"></i>`;
+            } else if (gameMode == "Game Over") {
+                gameModeIcon = `<i class="fas fa-times-circle icon"></i>`;
+            } else if (gameMode == "auto") {
+                gameModeIcon = `<i class="fas fa-robot icon"></i>`;
+            }
+
+            // Countdown Adjustment for modes
+            if (gameMode == "auto") {
+                gameTime = gameTime - 130 // Auto time is 30 seconds
+            } else if (gameMode == "Pick Up Your Controllers!") {
+                gameTime = gameTime - 120; // auto-to-teleop time is 10 seconds
+            }
+            
+
+            document.getElementById('red-score').innerHTML = `<i class="fas fa-flag icon"></i> Red Points: ${scores.redPoints}`;
+            document.getElementById('blue-score').innerHTML = `<i class="fas fa-flag icon"></i> Blue Points: ${scores.bluePoints}`;
+
+            const minutes = Math.floor(gameTime / 60);
+            const seconds = gameTime % 60;
+            document.getElementById('game-timer').innerHTML = `<i class="fas fa-clock icon"></i> ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+            document.getElementById('game-mode').innerHTML = `${gameModeIcon} ${gameMode.charAt(0).toUpperCase() + gameMode.slice(1)}`;
+
+            document.getElementById('match-info').innerHTML = `<i class="fas fa-info-circle icon"></i> Match: ${matchNumber}`;
+
+            // Display red card status if present
+            const redCardElement = document.getElementById('red-card');
+            if (redCard) {
+                redCardElement.style.display = 'block';
+                redCardElement.innerHTML = `<i class="fas fa-exclamation-triangle icon"></i> Red Card: ${redCard}`;
+            } else {
+                redCardElement.style.display = 'none';
+            }
+
+            if (gameMode == "Pick Up Your Controllers!") {
+                gameMode = "autoToTeleop";
+            } else if (gameMode == "Match Ready") {
+                gameMode = "matchready";
+            } else if (gameMode == "Game Over") {
+                gameMode = "gameover";
+            }
+
+            flashBackgroundForMode(gameMode);
+        }
+
+        // Update the scores, time, and mode every second
+        setInterval(updateScoresAndTime, 250);
+
+        // Show fullscreen button on hover
+        function showFullscreenButton() {
+            const container = document.getElementById('fullscreen-container');
+            const button = document.getElementById('fullscreen-button');
+            container.style.opacity = '1';
+            button.style.display = 'block';
+        }
+
+        // Hide fullscreen button when not hovered
+        function hideFullscreenButton() {
+            const container = document.getElementById('fullscreen-container');
+            const button = document.getElementById('fullscreen-button');
+            container.style.opacity = '0';
+            button.style.display = 'none';
+        }
+
+        // Toggle fullscreen mode
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable fullscreen mode: ${err.message}`);
+                });
+                document.getElementById('fullscreen-button').innerHTML = '<i class="fas fa-compress"></i>'; // Change to compress icon
+            } else {
+                document.exitFullscreen().catch(err => {
+                    console.error(`Error attempting to exit fullscreen mode: ${err.message}`);
+                });
+                document.getElementById('fullscreen-button').innerHTML = '<i class="fas fa-expand"></i>'; // Change back to expand icon
+            }
+        }
+    </script>
+</body>
+</html>
