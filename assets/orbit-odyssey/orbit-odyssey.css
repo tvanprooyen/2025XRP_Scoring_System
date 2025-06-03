@@ -1,0 +1,57 @@
+/* filepath: c:\Users\tvanp\Nextcloud\Robot Files\XRP\2025\Game System\assets\orbit-odyssey\orbit-odyssey.css */
+
+.oo-icon {
+  display: inline-block;
+  width: 4em; /* Adjust as needed */
+  height: 4em; /* Adjust as needed */
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+  vertical-align: middle; /* Align with text if used inline */
+}
+
+.oo-icon-small {
+  display: inline-block;
+  width: 2.5em; /* Adjust as needed */
+  height: 2.5em; /* Adjust as needed */
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+  vertical-align: middle; /* Align with text if used inline */
+}
+
+.oo-disabled {
+  opacity: 0.5; /* Make the icon appear disabled */
+}
+
+.oo-amp {
+  background-image: url('amp.svg');
+}
+
+.oo-co-op {
+  background-image: url('co-op.svg');
+}
+
+.oo-orbit-amp {
+  background-image: url('orbit-amp.svg');
+}
+
+.oo-orbit {
+  background-image: url('orbit.svg');
+}
+
+.oo-park {
+  background-image: url('park.svg');
+}
+
+.oo-rubble-high {
+  background-image: url('rubble-high.svg');
+}
+
+.oo-rubble-low {
+  background-image: url('rubble-low.svg');
+}
+
+.oo-ticket {
+  background-image: url('ticket.svg');
+}

@@ -3,9 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XRP Orbit Odyssey | Score Keeping System</title>
+    <title>XRP Score System | 2025</title>
     <!-- Link to local Font Awesome CSS -->
     <link rel="stylesheet" href="assets/font-awesome/css/all.min.css">
+    <link rel="stylesheet" href="assets/orbit-odyssey/orbit-odyssey.css">
+    <script src="settings.js"></script>
+    <script>
+
+        function loadChecklist() {
+
+            if (!Array.isArray(matchReadyChecklist) || matchReadyChecklist.length === 0) {
+                return;
+            }
+
+            // Fill id checklist from array matchReadyChecklist
+            const checklistElement = document.getElementById('matchreadychecklist');
+            checklistElement.innerHTML = ""; // Clear previous content if any
+
+            matchReadyChecklist.forEach(item => {
+                const id = item.replace(/\s+/g, '-').toLowerCase();
+                const listItem = document.createElement('div');
+                listItem.innerHTML = `<input type="checkbox" class="oo-checkbox" id="${id}"><label for="${id}">${item}</label>`;
+                checklistElement.appendChild(listItem);
+            });
+        }
+
+        function resetChecklist() {
+            if (!Array.isArray(matchReadyChecklist) || matchReadyChecklist.length === 0) {
+                return;
+            }
+
+            // Reset all checkboxes in the match ready checklist
+            const checkboxes = document.querySelectorAll('#matchreadychecklist input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadChecklist();
+            initializeAppWithSettings();
+        });
+
+    </script>
     <style>
         body {
             display: flex;
@@ -53,12 +93,13 @@
             justify-content: space-around;
             align-items: center;
             border: 1px solid #ccc;
+            color:white;
         }
         .team-section.red {
-            background-color: #ffcccc;
+            background-color: #CC3333;
         }
         .team-section.blue {
-            background-color: #cce5ff;
+            background-color: #375ACC;
         }
         .sub-section {
             margin-bottom: 20px;
@@ -83,9 +124,9 @@
             height: 120px;
             font-size: 16px;
             text-align: center;
-            background-color: #007BFF;
+            background-color: #333;
             color: white;
-            border: none;
+            border: 5px solid white;
             border-radius: 10px;
             cursor: pointer;
             display: flex;
@@ -94,7 +135,7 @@
             align-items: center;
         }
         .button:active {
-            background-color: #0056b3;
+            background-color: #1b8230;
         }
         .scoreboard {
             display: flex;
@@ -133,6 +174,48 @@
         .control-button:active {
             background-color: #0056b3;
         }
+        .keybind-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 1000px;
+            max-height: 80vh;
+            overflow-y: auto;
+            background-color: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            z-index: 1000;
+            display: none;
+        }
+        .keybind-mode-section {
+            margin-bottom: 20px;
+        }
+        .keybind-alliance-section {
+            margin-bottom: 10px;
+        }
+        .keybind-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .keybind-mode-section h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .keybind-alliance-section h4 {
+            margin-top: 0;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .keybind-alliance-section p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
@@ -158,8 +241,7 @@
 
         <!-- Right-aligned Open Viewer button -->
         <div>
-            <button onclick="openViewer()" class="control-button">Open Viewer</button>
-            <button onclick="openStreamViewer()" class="control-button">Open Stream Viewer</button>
+            <button id="open-controls-overlay-btn" class="control-button">Controls &amp; Tools</button>
         </div>
     </div>
 
@@ -173,8 +255,11 @@
     </div>
 
     <div id="match-ready" class="content active">
-        <h2>Match Ready</h2>
-        <p>Prepare for the match. Ensure all systems are ready.</p>
+        <div>
+            <h2>Match Ready</h2>
+            <p>Prepare for the match. Ensure all systems are ready.</p>
+        </div>
+        <div id="matchreadychecklist" style="font-size:x-large"></div>
     </div>
 
     <div id="auto" class="content">
@@ -183,14 +268,14 @@
             <div class="sub-section">
                 <h4>Penalties</h4>
                 <div class="button-container">
-                    <button class="button" onclick="addScore('bluePoints', 2, 'Ticket Penalty')">Ticket <br> (-2)</button>
-                    <button class="button" onclick="redCardPenalty('bluePoints')">Red<br>Card</button>
+                    <button class="button" id="auto-red-penalty-ticket" onclick="addScore('bluePoints', settings.penaltyTicketPoints, 'Ticket Penalty')"><span class="oo-icon oo-ticket"></span>Ticket</button>
+                    <button class="button" onclick="redCardPenalty('redPoints')">Red<br>Card</button>
                 </div>
                 <h4>Auto Points</h4>
                 <div class="button-container">
-                    <button class="button" onclick="addScore('redPoints', 1, 'Rubble Low')">Rubble<br>Low (+1)</button>
-                    <button class="button" onclick="addScore('redPoints', 3, 'Rubble High')">Rubble<br>High (+3)</button>
-                    <button class="button" onclick="addScore('redPoints', 5, 'Low Parking')">Low<br>Parking (+5)</button>
+                    <button class="button" id="auto-red-rubble-low" onclick="addScore('redPoints', settings.autoLowRubblePoints, 'Rubble Low')"><span class="oo-icon oo-rubble-low"></span>Rubble<br>Low</button>
+                    <button class="button" id="auto-red-rubble-high" onclick="addScore('redPoints', settings.autoHighRubblePoints, 'Rubble High')"><span class="oo-icon oo-rubble-high"></span>Rubble<br>High</button>
+                    <button class="button" id="auto-red-low-parking" onclick="addScore('redPoints', settings.autoLowParkingPoints, 'Low Parking')"><span class="oo-icon oo-park"></span>Low<br>Parking</button>
                 </div>
             </div>
         </div>
@@ -200,14 +285,14 @@
             <div class="sub-section">
                 <h4>Penalties</h4>
                 <div class="button-container">
-                    <button class="button" onclick="addScore('redPoints', 2, 'Ticket Penalty')">Ticket <br> (-2)</button>
-                    <button class="button" onclick="redCardPenalty('redPoints')">Red<br>Card</button>
+                    <button class="button" id="auto-blue-penalty-ticket" onclick="addScore('redPoints', settings.penaltyTicketPoints, 'Ticket Penalty')"><span class="oo-icon oo-ticket"></span>Ticket</button>
+                    <button class="button" onclick="redCardPenalty('bluePoints')">Red<br>Card</button>
                 </div>
                 <h4>Auto Points</h4>
                 <div class="button-container">
-                    <button class="button" onclick="addScore('bluePoints', 1, 'Rubble Low')">Rubble<br>Low (+1)</button>
-                    <button class="button" onclick="addScore('bluePoints', 3, 'Rubble High')">Rubble<br>High (+3)</button>
-                    <button class="button" onclick="addScore('bluePoints', 5, 'Low Parking')">Low<br>Parking (+5)</button>
+                    <button class="button" id="auto-blue-rubble-low" onclick="addScore('bluePoints', settings.autoLowRubblePoints, 'Rubble Low')"><span class="oo-icon oo-rubble-low"></span>Rubble<br>Low</button>
+                    <button class="button" id="auto-blue-rubble-high" onclick="addScore('bluePoints', settings.autoHighRubblePoints, 'Rubble High')"><span class="oo-icon oo-rubble-high"></span>Rubble<br>High</button>
+                    <button class="button" id="auto-blue-low-parking" onclick="addScore('bluePoints', settings.autoLowParkingPoints, 'Low Parking')"><span class="oo-icon oo-park"></span>Low<br>Parking</button>
                 </div>
             </div>
         </div>
@@ -224,15 +309,15 @@
             <div class="sub-section">
                 <h4>Penalties</h4>
                 <div class="button-container">
-                    <button class="button" onclick="addScore('bluePoints', 2, 'Ticket Penalty')">Ticket <br> (-2)</button>
-                    <button class="button" onclick="redCardPenalty('bluePoints')">Red<br>Card</button>
+                    <button class="button" id="teleop-red-penalty-ticket" onclick="addScore('bluePoints', settings.penaltyTicketPoints, 'Ticket Penalty')"><span class="oo-icon oo-ticket"></span>Ticket</button>
+                    <button class="button" onclick="redCardPenalty('redPoints')">Red<br>Card</button>
                 </div>
                 <h4>Teleop Points</h4>
                 <div class="button-container">
-                    <button class="button" onclick="addScore('redPoints', 1, 'Rubble Low')">Rubble<br>Low (+1)</button>
-                    <button class="button" onclick="addScore('redPoints', 3, 'Rubble High')">Rubble<br>High (+3)</button>
-                    <button class="button" onclick="addScore('redPoints', 5, 'Orbit')">Orbit<br>(+5)</button>
-                    <button class="button" onclick="addScore('redPoints', 8, 'Orbit With Amplifier')">Orbit<br>With Amplifier<br>(+8)</button>
+                    <button class="button" id="teleop-red-rubble-low" onclick="addScore('redPoints', settings.teleopLowRubblePoints, 'Rubble Low')"><span class="oo-icon oo-rubble-low"></span>Rubble<br>Low</button>
+                    <button class="button" id="teleop-red-rubble-high" onclick="addScore('redPoints', settings.teleopHighRubblePoints, 'Rubble High')"><span class="oo-icon oo-rubble-high"></span>Rubble<br>High</button>
+                    <button class="button" id="teleop-red-orbit" onclick="addScore('redPoints', settings.teleopOrbitPoints, 'Orbit')"><span class="oo-icon oo-orbit"></span>Orbit</button>
+                    <button class="button" id="teleop-red-orbit-amp" onclick="addScore('redPoints', settings.teleopOrbitAmpPoints, 'Orbit With Amplifier')"><span class="oo-icon oo-orbit-amp"></span>Orbit<br>With Amplifier</button>
                 </div>
             </div>
         </div>
@@ -240,15 +325,15 @@
             <div class="sub-section">
                 <h4>Penalties</h4>
                 <div class="button-container">
-                    <button class="button" onclick="addScore('redPoints', 2, 'Ticket Penalty')">Ticket <br> (-2)</button>
-                    <button class="button" onclick="redCardPenalty('redPoints')">Red<br>Card</button>
+                    <button class="button" id="teleop-blue-penalty-ticket" onclick="addScore('redPoints', settings.penaltyTicketPoints, 'Ticket Penalty')"><span class="oo-icon oo-ticket"></span>Ticket</button>
+                    <button class="button" onclick="redCardPenalty('bluePoints')">Red<br>Card</button>
                 </div>
                 <h4>Teleop Points</h4>
                 <div class="button-container">
-                    <button class="button" onclick="addScore('bluePoints', 1, 'Rubble Low')">Rubble<br>Low (+1)</button>
-                    <button class="button" onclick="addScore('bluePoints', 3, 'Rubble High')">Rubble<br>High (+3)</button>
-                    <button class="button" onclick="addScore('bluePoints', 5, 'Orbit')">Orbit<br>(+5)</button>
-                    <button class="button" onclick="addScore('bluePoints', 8, 'Orbit With Amplifier')">Orbit<br>With Amplifier<br>(+8)</button>
+                    <button class="button" id="teleop-blue-rubble-low" onclick="addScore('bluePoints', settings.teleopLowRubblePoints, 'Rubble Low')"><span class="oo-icon oo-rubble-low"></span>Rubble<br>Low</button>
+                    <button class="button" id="teleop-blue-rubble-high" onclick="addScore('bluePoints', settings.teleopHighRubblePoints, 'Rubble High')"><span class="oo-icon oo-rubble-high"></span>Rubble<br>High</button>
+                    <button class="button" id="teleop-blue-orbit" onclick="addScore('bluePoints', settings.teleopOrbitPoints, 'Orbit')"><span class="oo-icon oo-orbit"></span>Orbit</button>
+                    <button class="button" id="teleop-blue-orbit-amp" onclick="addScore('bluePoints', settings.teleopOrbitAmpPoints, 'Orbit With Amplifier')"><span class="oo-icon oo-orbit-amp"></span>Orbit<br>With Amplifier</button>
                 </div>
             </div>
         </div>
@@ -260,21 +345,21 @@
             <div class="sub-section">
                 <h4>Penalties</h4>
                 <div class="button-container">
-                    <button class="button" onclick="addScore('bluePoints', 2, 'Ticket Penalty')">Ticket <br> (-2)</button>
-                    <button class="button" onclick="redCardPenalty('bluePoints')">Red<br>Card</button>
+                    <button class="button" id="endgame-red-penalty-ticket" onclick="addScore('bluePoints', settings.penaltyTicketPoints, 'Ticket Penalty')"><span class="oo-icon oo-ticket"></span>Ticket</button>
+                    <button class="button" onclick="redCardPenalty('redPoints')">Red<br>Card</button>
                 </div>
                 <h4>Teleop Points</h4>
                 <div class="button-container">
-                    <button class="button" onclick="addScore('redPoints', 1, 'Rubble Low')">Rubble<br>Low (+1)</button>
-                    <button class="button" onclick="addScore('redPoints', 3, 'Rubble High')">Rubble<br>High (+3)</button>
-                    <button class="button" onclick="addScore('redPoints', 5, 'Orbit')">Orbit<br>(+5)</button>
-                    <button class="button" onclick="addScore('redPoints', 8, 'Orbit With Amplifier')">Orbit<br>With Amplifier<br>(+8)</button>
+                    <button class="button" id="endgame-red-teleop-rubble-low" onclick="addScore('redPoints', settings.teleopLowRubblePoints, 'Rubble Low')"><span class="oo-icon oo-rubble-low"></span>Rubble<br>Low</button>
+                    <button class="button" id="endgame-red-teleop-rubble-high" onclick="addScore('redPoints', settings.teleopHighRubblePoints, 'Rubble High')"><span class="oo-icon oo-rubble-high"></span>Rubble<br>High</button>
+                    <button class="button" id="endgame-red-teleop-orbit" onclick="addScore('redPoints', settings.endgameOrbitPoints, 'Orbit')"><span class="oo-icon oo-orbit"></span>Orbit</button>
+                    <button class="button" id="endgame-red-teleop-orbit-amp" onclick="addScore('redPoints', settings.endgameOrbitAmpPoints, 'Orbit With Amplifier')"><span class="oo-icon oo-orbit-amp"></span>Orbit<br>With Amplifier</button>
                 </div>
                 <h4>End Game Points</h4>
                 <div class="button-container">
-                    <button class="button" onclick="addScore('redPoints', 10, 'Amplifier Returned')">Amplifier<br>Returned<br>(+10)</button>
-                    <button class="button" onclick="addScore('redPoints', 5, 'Low Parking')">Low<br>Parking<br>(+5)</button>
-                    <button class="button" onclick="addScore('redPoints', 10, 'Coopertition Bonus')">Coopertition<br>Bonus<br>(+10)</button>
+                    <button class="button" id="endgame-red-amp-returned" onclick="addScore('redPoints', settings.endgameAmpReturnedPoints, 'Amplifier Returned'); disableRedAmpReturned();"><span class="oo-icon oo-amp"></span>Amplifier<br>Returned</button>
+                    <button class="button" id="endgame-red-low-parking" onclick="addScore('redPoints', settings.endgameLowParkingPoints, 'Low Parking')"><span class="oo-icon oo-park"></span>Low<br>Parking</button>
+                    <button class="button" id="endgame-red-coop-bonus" onclick="addScore('bluePoints', settings.endgameCoopPoints, 'Coopertition Bonus'); addScore('redPoints', settings.endgameCoopPoints, 'Coopertition Bonus'); disableCoop();"><span class="oo-icon oo-co-op"></span>Coopertition<br>Bonus</button>
                 </div>
             </div>
         </div>
@@ -282,21 +367,21 @@
             <div class="sub-section">
                 <h4>Penalties</h4>
                 <div class="button-container">
-                    <button class="button" onclick="addScore('redPoints', 2, 'Ticket Penalty')">Ticket <br> (-2)</button>
-                    <button class="button" onclick="redCardPenalty('redPoints')">Red<br>Card</button>
+                    <button class="button" id="endgame-blue-penalty-ticket" onclick="addScore('redPoints', settings.penaltyTicketPoints, 'Ticket Penalty')"><span class="oo-icon oo-ticket"></span>Ticket</button>
+                    <button class="button" onclick="redCardPenalty('bluePoints')">Red<br>Card</button>
                 </div>
                 <h4>Teleop Points</h4>
                 <div class="button-container">
-                    <button class="button" onclick="addScore('bluePoints', 1, 'Rubble Low')">Rubble<br>Low (+1)</button>
-                    <button class="button" onclick="addScore('bluePoints', 3, 'Rubble High')">Rubble<br>High (+3)</button>
-                    <button class="button" onclick="addScore('bluePoints', 5, 'Orbit')">Orbit<br>(+5)</button>
-                    <button class="button" onclick="addScore('bluePoints', 8, 'Orbit With Amplifier')">Orbit<br>With Amplifier<br>(+8)</button>
+                    <button class="button" id="endgame-blue-teleop-rubble-low" onclick="addScore('bluePoints', settings.teleopLowRubblePoints, 'Rubble Low')"><span class="oo-icon oo-rubble-low"></span>Rubble<br>Low</button>
+                    <button class="button" id="endgame-blue-teleop-rubble-high" onclick="addScore('bluePoints', settings.teleopHighRubblePoints, 'Rubble High')"><span class="oo-icon oo-rubble-high"></span>Rubble<br>High</button>
+                    <button class="button" id="endgame-blue-teleop-orbit" onclick="addScore('bluePoints', settings.endgameOrbitPoints, 'Orbit')"><span class="oo-icon oo-orbit"></span>Orbit</button>
+                    <button class="button" id="endgame-blue-teleop-orbit-amp" onclick="addScore('bluePoints', settings.endgameOrbitAmpPoints, 'Orbit With Amplifier')"><span class="oo-icon oo-orbit-amp"></span>Orbit<br>With Amplifier</button>
                 </div>
                 <h4>End Game Points</h4>
                 <div class="button-container">
-                    <button class="button" onclick="addScore('bluePoints', 10, 'Amplifier Returned')">Amplifier<br>Returned<br>(+10)</button>
-                    <button class="button" onclick="addScore('bluePoints', 5, 'Low Parking')">Low<br>Parking<br>(+5)</button>
-                    <button class="button" onclick="addScore('bluePoints', 10, 'Coopertition Bonus')">Coopertition<br>Bonus<br>(+10)</button>
+                    <button class="button" id="endgame-blue-amp-returned" onclick="addScore('bluePoints', settings.endgameAmpReturnedPoints, 'Amplifier Returned'); disableBlueAmpReturned();"><span class="oo-icon oo-amp"></span>Amplifier<br>Returned</button>
+                    <button class="button" id="endgame-blue-low-parking" onclick="addScore('bluePoints', settings.endgameLowParkingPoints, 'Low Parking')"><span class="oo-icon oo-park"></span>Low<br>Parking</button>
+                    <button class="button" id="endgame-blue-coop-bonus" onclick="addScore('bluePoints', settings.endgameCoopPoints, 'Coopertition Bonus'); addScore('redPoints', settings.endgameCoopPoints, 'Coopertition Bonus'); disableCoop();"><span class="oo-icon oo-co-op"></span>Coopertition<br>Bonus</button>
                 </div>
             </div>
         </div>
@@ -305,43 +390,259 @@
     <div id="game-over" class="content">
         <!-- Red Alliance Score Review -->
         <div class="team-section red">
-            <div id="red-score-log">
-                <!-- Red Alliance score log will be dynamically populated here -->
-            </div>
-            <div style="margin-top: 20px;">
+            <!-- <div style="margin-top: 20px;">
                 <label for="red-total-score">Adjust Total Score:</label>
                 <input type="number" id="red-total-score" value="0" onchange="adjustTotalScore('red')">
+            </div> -->
+            <div id="red-summary">
+                <p><span class="oo-icon-small oo-park"></span>Parking: (Auto: <span id="red-summary-auto-low-parking"></span>) (End Game: <span id="red-summary-endgame-low-parking"></span>)</p>
+                <hr>
+                <div style="display: flex; justify-content: space-evenly; align-items: stretch;">
+                    <div>
+                        <p><span class="oo-icon-small oo-rubble-high"></span>High Rubble: (Teleop: <span id="red-summary-high-rubble"></span>) (Auto: <span id="red-summary-auto-high-rubble"></span>)</p>
+                        <p><span class="oo-icon-small oo-rubble-low"></span>Low Rubble: (Teleop: <span id="red-summary-low-rubble"></span>) (Auto: <span id="red-summary-auto-low-rubble"></span>)</p>
+                    </div>
+                    <div style="width:1px; background:#ccc; margin:0 24px;"></div>
+                    <div>
+                        <p><span class="oo-icon-small oo-orbit"></span>Orbit: <span id="red-summary-orbit"></span></p>
+                        <p><span class="oo-icon-small oo-orbit-amp"></span>Orbit with Amplifier: <span id="red-summary-orbit-amplifier"></span></p>
+                    </div>
+                </div>
+                <hr>
+                <p><span class="oo-icon-small oo-amp" id="red-amp-returned"></span>Amplifier Returned: <span id="red-summary-amplifier-returned"></span></p>
+                <p><span class="oo-icon-small oo-co-op" id="red-co-op-bonus"></span>Coopertition Bonus: <span id="red-summary-coopertition-bonus"></span></p>
+                <hr>
+                <p><span class="oo-icon-small oo-ticket"></span>Penalty Tickets: <span id="red-summary-penalty-tickets"></span></p>
+            </div>
+            <div style="margin-top: 10px; margin-bottom: 10px;">
+                <button class="control-button" onclick="showScoreLogOverlay('red')">View Red Score Log</button>
             </div>
         </div>
 
         <!-- Blue Alliance Score Review -->
         <div class="team-section blue">
-            <div id="blue-score-log">
-                <!-- Blue Alliance score log will be dynamically populated here -->
-            </div>
-            <div style="margin-top: 20px;">
+            <!-- <div style="margin-top: 20px;">
                 <label for="blue-total-score">Adjust Total Score:</label>
                 <input type="number" id="blue-total-score" value="0" onchange="adjustTotalScore('blue')">
+            </div> -->
+            <div id="blue-summary">
+                <p><span class="oo-icon-small oo-park"></span>Parking: (Auto: <span id="blue-summary-auto-low-parking"></span>) (End Game: <span id="blue-summary-endgame-low-parking"></span>)</p>
+                <hr>
+                <div style="display: flex; justify-content: space-evenly; align-items: stretch;">
+                    <div>
+                        <p><span class="oo-icon-small oo-rubble-high"></span>High Rubble: (Teleop: <span id="blue-summary-high-rubble"></span>) (Auto: <span id="blue-summary-auto-high-rubble"></span>)</p>
+                        <p><span class="oo-icon-small oo-rubble-low"></span>Low Rubble: (Teleop: <span id="blue-summary-low-rubble"></span>) (Auto: <span id="blue-summary-auto-low-rubble"></span>)</p>
+                    </div>
+                    <div style="width:1px; background:#ccc; margin:0 24px;"></div>
+                    <div>
+                        <p><span class="oo-icon-small oo-orbit"></span>Orbit: <span id="blue-summary-orbit"></span></p>
+                        <p><span class="oo-icon-small oo-orbit-amp"></span>Orbit with Amplifier: <span id="blue-summary-orbit-amplifier"></span></p>
+                    </div>
+                </div>
+                <hr>
+                <p><span class="oo-icon-small oo-amp" id="blue-amp-returned"></span>Amplifier Returned: <span id="blue-summary-amplifier-returned"></span></p>
+                <p><span class="oo-icon-small oo-co-op" id="blue-co-op-bonus"></span>Coopertition Bonus: <span id="blue-summary-coopertition-bonus"></span></p>
+                <hr>
+                <p><span class="oo-icon-small oo-ticket"></span>Penalty Tickets: <span id="blue-summary-penalty-tickets"></span></p>
+            </div>
+            <div style="margin-top: 10px; margin-bottom: 10px;">
+                <button class="control-button" onclick="showScoreLogOverlay('blue')">View Blue Score Log</button>
             </div>
         </div>
 
         <!-- <button class="control-button" onclick="saveAdjustedScores()">Save Adjusted Scores</button> -->
     </div>
 
+    <!-- Score Log Overlay -->
+    <div id="score-log-overlay" class="keybind-overlay" style="display: none;"> <!-- Assuming keybind-overlay provides full screen, centered styling -->
+        <div style="background-color: white; padding: 20px; border-radius: 10px; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: left; position: relative;"> <!-- Panel -->
+            <button onclick="hideScoreLogOverlay()" class="control-button" style="position: absolute; top: 10px; right: 10px; z-index:1;">Close (Esc)</button>
+            <h3 id="score-log-overlay-title" style="text-align: center; margin-top: 0; margin-bottom: 15px;">Score Log</h3>
+            <div id="score-log-overlay-content" style="max-height: 60vh; overflow-y: auto; border: 1px solid #eee; padding: 15px; border-radius: 5px; background-color: #fdfdfd;">
+                <!-- Score log content will be dynamically populated here -->
+            </div>
+        </div>
+    </div>
+
     <div class="scoreboard">
         <div class="score" id="red-score">Red Points: 0</div>
-        <div class="timer" id="game-timer">Time Left: 2:40</div>
+        <div class="timer" id="game-timer">Time Left: 0:00</div> 
         <div class="score" id="blue-score">Blue Points: 0</div>
+    </div>
+
+    <div id="keybind-overlay" class="keybind-overlay" style="display: none;">
+        <button id="close-keybind-overlay-btn" class="control-button" style="position: absolute; top: 10px; right: 10px;">Close (Esc)</button>
+        <div class="keybind-grid">
+            <!-- Auto Keybinds -->
+            <div id="keybinds-auto-section" class="keybind-mode-section">
+                <h3>Auto Mode</h3>
+                <div class="keybind-alliance-section">
+                    <h4>Red Alliance</h4>
+                    <p>Rubble Low (+2): Q</p>
+                    <p>Rubble High (+6): W</p>
+                    <p>Low Parking (+5): E</p>
+                    <p>Penalty Ticket (-2 Opponent): A</p>
+                </div>
+                <div class="keybind-alliance-section">
+                    <h4>Blue Alliance</h4>
+                    <p>Rubble Low (+2): U</p>
+                    <p>Rubble High (+6): I</p>
+                    <p>Low Parking (+5): O</p>
+                    <p>Penalty Ticket (-2 Opponent): L</p>
+                </div>
+            </div>
+
+            <!-- Teleop Keybinds -->
+            <div id="keybinds-teleop-section" class="keybind-mode-section">
+                <h3>Teleop Mode</h3>
+                <div class="keybind-alliance-section">
+                    <h4>Red Alliance</h4>
+                    <p>Rubble Low (+1): Q</p>
+                    <p>Rubble High (+3): W</p>
+                    <p>Orbit (+5): T</p>
+                    <p>Orbit With Amplifier (+8): R</p>
+                    <p>Penalty Ticket (-2 Opponent): A</p>
+                </div>
+                <div class="keybind-alliance-section">
+                    <h4>Blue Alliance</h4>
+                    <p>Rubble Low (+1): U</p>
+                    <p>Rubble High (+3): I</p>
+                    <p>Orbit (+5): Y</p>
+                    <p>Orbit With Amplifier (+8): P</p>
+                    <p>Penalty Ticket (-2 Opponent): L</p>
+                </div>
+            </div>
+
+            <!-- Endgame Keybinds -->
+            <div id="keybinds-endgame-section" class="keybind-mode-section">
+                <h3>Endgame Mode</h3>
+                <div class="keybind-alliance-section">
+                    <h4>Red Alliance (Teleop Points)</h4>
+                    <p>Rubble Low (+1): Q</p>
+                    <p>Rubble High (+3): W</p>
+                    <p>Orbit (+5): T</p>
+                    <p>Orbit With Amplifier (+8): R</p>
+                    <h4>Red Alliance (End Game Points)</h4>
+                    <p>Amplifier Returned (+10): S</p>
+                    <p>Low Parking (+5): E</p>
+                    <p>Coopertition Bonus (+10): F</p>
+                    <p>Penalty Ticket (-2 Opponent): A</p>
+                </div>
+                <div class="keybind-alliance-section">
+                    <h4>Blue Alliance (Teleop Points)</h4>
+                    <p>Rubble Low (+1): U</p>
+                    <p>Rubble High (+3): I</p>
+                    <p>Orbit (+5): Y</p>
+                    <p>Orbit With Amplifier (+8): P</p>
+                    <h4>Blue Alliance (End Game Points)</h4>
+                    <p>Amplifier Returned (+10): J</p>
+                    <p>Low Parking (+5): O</p>
+                    <p>Coopertition Bonus (+10): M</p>
+                    <p>Penalty Ticket (-2 Opponent): L</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls Overlay -->
+    <div id="controls-overlay" class="keybind-overlay" style="display: none; width: 220px; padding-top: 60px;">
+        <button id="close-controls-overlay-btn" class="control-button" style="position: absolute; top: 10px; right: 10px;">Close (Esc)</button>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 20px; margin-top: 20px;">
+            <button onclick="openViewer()" class="control-button" style="width: 220px;">Open Viewer</button>
+            <button onclick="openStreamViewer()" class="control-button" style="width: 220px;">Open Stream Viewer</button>
+            <hr style="width: 100%; border: 1px solid #ccc; margin: 20px 0;">
+            <button onclick="viewerScreen('gamescreen')" class="control-button" style="width: 220px;" id="gamescreen-button">Game Screen</button>
+            <button onclick="viewerScreen('blankscreen')" class="control-button" style="width: 220px;" id="blankscreen-button">Blank Screen</button>
+            <button onclick="viewerScreen('summaryscreen')" class="control-button" style="width: 220px;"id="summaryscreen-button">Summary Screen</button>
+            <button onclick="muteSoundsToggle()" class="control-button" style="width: 220px;" id="mute-button">Mute</button>
+            <!-- <button id="show-keybinds-btn" class="control-button" style="width: 220px;">Show Keybinds (?)</button> -->
+        </div>
     </div>
 
     <audio id="match-failed" src="assets/sounds/match-failed.mp3"></audio>
 
     <script>
+        //When page loads, set up the initial game timer
+        // document.addEventListener('DOMContentLoaded', () => {
+        //     getElementById('game-timer').textContent = `Time Left: ${getGameTime()}`;
+        // });
+
+        function viewerScreen(screen) {
+            localStorage.setItem('viewerScreen', screen);
+
+            //This is changed in settings.js
+            //Check if array is not empty
+            if(screensAutoMute.length !== 0) {
+
+                //Mute any screen that is in the array
+                if(screensAutoMute.includes(screen)) {
+                    muteSounds(true);
+                } else {
+                    muteSounds(false);
+                }
+            }
+            
+
+            //Color Button to show its selected
+            if(screen === 'gamescreen') {
+                document.getElementById('gamescreen-button').style.backgroundColor = '#375ACC';
+                document.getElementById('blankscreen-button').style.backgroundColor = '';
+                document.getElementById('summaryscreen-button').style.backgroundColor = '';
+            } else if(screen === 'blankscreen') {
+                document.getElementById('blankscreen-button').style.backgroundColor = '#375ACC';
+                document.getElementById('gamescreen-button').style.backgroundColor = '';
+                document.getElementById('summaryscreen-button').style.backgroundColor = '';
+            } else if(screen === 'summaryscreen') {
+                document.getElementById('summaryscreen-button').style.backgroundColor = '#375ACC';
+                document.getElementById('gamescreen-button').style.backgroundColor = '';
+                document.getElementById('blankscreen-button').style.backgroundColor = '';
+            }
+        }
+
+        function muteSoundsToggle() {
+            if(document.getElementById('mute-button').textContent === 'Mute') {
+                document.getElementById('mute-button').textContent = 'Unmute';
+                localStorage.setItem('muted', 'true');
+            } else {
+                document.getElementById('mute-button').textContent = 'Mute';
+                localStorage.setItem('muted', 'false');
+            }
+        }
+
+        function muteSounds(shouldMute) {
+            if(shouldMute) {
+                document.getElementById('mute-button').textContent = 'Unmute';
+                localStorage.setItem('muted', 'true');
+            } else {
+                document.getElementById('mute-button').textContent = 'Mute';
+                localStorage.setItem('muted', 'false');
+            }
+        }
+
+        function initializeAppWithSettings() {
+            // Ensure this function is called after settings are loaded
+            // For example, update any UI elements that depend on settings right away
+            gameTime = settings.GAME_TIME;
+            document.getElementById('game-timer').textContent = `Time Left: ${formatGameTime(gameTime)}`;
+            // Any other initializations that depend on settings
+            
+            viewerScreen(defaultLoadedScreen)
+
+            localStorage.setItem('muted', defaultMuteSound); // Default sound state
+
+            if(defaultMuteSound === 'true') {
+                muteSounds(true);
+            } else {
+                muteSounds(false);
+            }
+        }
+
         let scores = { redPoints: 0, bluePoints: 0 };
-        let gameTime = 160; // Total game time in seconds (2 minutes 40 seconds)
+        let gameTime = settings.GAME_TIME; // Total game time in seconds (2 minutes 40 seconds)
         let timerInterval;
         let currentMode = 'match-ready'; // Default mode
         let matchNumber = 0;
+        let isMatchRunning = false;
 
         // Log object to track scoring events and penalties
         let scoreLog = {
@@ -349,12 +650,247 @@
             blue: []
         };
 
+        function updateGameSummaries() {
+            const alliances = ['red', 'blue'];
+            const initialTotalGameTime = settings.GAME_TIME; // Corresponds to initial 'gameTime'
+            const autoPeriodDuration = settings.AUTO_PERIOD_DURATION; // e.g., 15 seconds
+            const endgamePeriodStartTime = settings.ENDGAME_PERIOD_DURATION; // Seconds remaining on timer when endgame starts
+
+            const autoEndBoundaryTime = initialTotalGameTime - autoPeriodDuration; // e.g., 160 - 15 = 145. Time >= this is Auto.
+            const endgameStartBoundaryTime = endgamePeriodStartTime; // e.g., 30. Time <= this is Endgame.
+
+            alliances.forEach(alliance => {
+                let autoLowParkingCount = 0;
+                let lowRubbleCount = 0;
+                let highRubbleCount = 0;
+                let autoLowRubbleCount = 0;
+                let autoHighRubbleCount = 0;
+                let orbitCount = 0;
+                let orbitAmplifierCount = 0;
+                let endgameLowParkingCount = 0;
+                let amplifierReturnedCount = 0;
+                let coopertitionBonusCount = 0;
+                let penaltyTicketsCommittedByThisAllianceCount = 0;
+
+                // Process scores for the current alliance
+                if (scoreLog[alliance]) {
+                    scoreLog[alliance].forEach(entry => {
+                        const { description, value, time, gameMode } = entry; // 'time' is gameTime when event was logged, 'gameMode' is the mode
+
+                        // Auto Low Parking (Points: 5)
+                        if (description === 'Low Parking' && value === 5 && gameMode === 'auto') {
+                            autoLowParkingCount++;
+                        }
+
+                        // End Game Low Parking (Points: 5)
+                        if (description === 'Low Parking' && value === 5 && gameMode === 'endgame') {
+                            endgameLowParkingCount++;
+                        }
+
+                        // Low Rubble (Auto: 2 pts, Teleop/Endgame: 1 pt)
+                        if (description === 'Rubble Low') {
+                            if (value === 2 && time && gameMode === 'auto') { // Auto
+                                autoLowRubbleCount++;
+                            } else { // Teleop/Endgame
+                                lowRubbleCount++;
+                            }
+                        }
+
+                        // High Rubble (Auto: 6 pts, Teleop/Endgame: 3 pts)
+                        if (description === 'Rubble High') {
+                            if (value === 6 && gameMode === 'auto') { // Auto
+                                autoHighRubbleCount++;
+                            } else { // Teleop/Endgame
+                                highRubbleCount++;
+                            }
+                        }
+
+                        // Orbit (Points: 5) - occurs in Teleop/Endgame phases
+                        if (description === 'Orbit' && value === 5) {
+                            orbitCount++;
+                        }
+
+                        // Orbit With Amplifier (Points: 8) - occurs in Teleop/Endgame phases
+                        if (description === 'Orbit With Amplifier' && value === 8) {
+                            orbitAmplifierCount++;
+                        }
+
+                        // Amplifier Returned (Points: 10) - occurs in Endgame phase
+                        if (description === 'Amplifier Returned' && value === 10) {
+                            amplifierReturnedCount++;
+                        }
+
+                        // Coopertition Bonus (Points: 10)
+                        if (description === 'Coopertition Bonus' && value === 10) {
+                            coopertitionBonusCount++;
+                        }
+                    });
+                }
+
+                // Calculate Penalty Tickets committed by this alliance
+                // These are logged in the opponent's scoreLog as points for the opponent.
+                const opponentAlliance = alliance === 'red' ? 'blue' : 'red';
+                if (scoreLog[opponentAlliance]) {
+                    scoreLog[opponentAlliance].forEach(entry => {
+                        const { description, value } = entry;
+                        // If opponent gained 2 points from a 'Ticket Penalty' (meaning this alliance committed it)
+                        if (description === 'Ticket Penalty' && value === 2) {
+                            penaltyTicketsCommittedByThisAllianceCount++;
+                        }
+                    });
+                }
+
+                // Update DOM elements
+                document.getElementById(`${alliance}-summary-auto-low-parking`).textContent = autoLowParkingCount;
+                document.getElementById(`${alliance}-summary-auto-low-rubble`).textContent = autoLowRubbleCount;
+                document.getElementById(`${alliance}-summary-auto-high-rubble`).textContent = autoHighRubbleCount;
+                document.getElementById(`${alliance}-summary-low-rubble`).textContent = lowRubbleCount;
+                document.getElementById(`${alliance}-summary-high-rubble`).textContent = highRubbleCount;
+                document.getElementById(`${alliance}-summary-orbit`).textContent = orbitCount;
+                document.getElementById(`${alliance}-summary-orbit-amplifier`).textContent = orbitAmplifierCount;
+                document.getElementById(`${alliance}-summary-endgame-low-parking`).textContent = endgameLowParkingCount;
+                document.getElementById(`${alliance}-summary-amplifier-returned`).textContent = amplifierReturnedCount;
+                document.getElementById(`${alliance}-summary-coopertition-bonus`).textContent = coopertitionBonusCount;
+                document.getElementById(`${alliance}-summary-penalty-tickets`).textContent = penaltyTicketsCommittedByThisAllianceCount;
+            });
+
+            //Save Summaries to localStorage using innerHTML
+            const redSummary = document.getElementById('red-summary').innerHTML;
+            const blueSummary = document.getElementById('blue-summary').innerHTML;
+
+            localStorage.setItem('redSummary', redSummary);
+            localStorage.setItem('blueSummary', blueSummary);
+
+            // Send Winner to localStorage
+            const winner = scores.redPoints > scores.bluePoints ? 'red' : (scores.bluePoints > scores.redPoints ? 'blue' : 'tie');
+            localStorage.setItem('winner', winner);
+        }
+
+        function disableCoop() {
+
+            //endgame-red-coop-bonus
+            //endgame-blue-coop-bonus
+            const redCoopButton = document.getElementById('endgame-red-coop-bonus');
+            const blueCoopButton = document.getElementById('endgame-blue-coop-bonus');
+            redCoopButton.disabled = true;
+            redCoopButton.style.backgroundColor = '#ccc'; // Change color to indicate disabled
+            redCoopButton.style.cursor = 'not-allowed'; // Change cursor to indicate disabled
+            blueCoopButton.disabled = true;
+            blueCoopButton.style.backgroundColor = '#ccc'; // Change color to indicate disabled
+            blueCoopButton.style.cursor = 'not-allowed'; // Change cursor to indicate disabled
+        }
+
+        function disableRedAmpReturned() {
+            const redAmpReturned = document.getElementById('endgame-red-amp-returned');
+            redAmpReturned.disabled = true;
+            redAmpReturned.style.backgroundColor = '#ccc'; // Change color to indicate disabled
+            redAmpReturned.style.cursor = 'not-allowed'; // Change cursor to indicate disabled
+        }
+
+        function disableBlueAmpReturned() {
+            const blueAmpReturned = document.getElementById('endgame-blue-amp-returned');
+            blueAmpReturned.disabled = true;
+            blueAmpReturned.style.backgroundColor = '#ccc'; // Change color to indicate disabled
+            blueAmpReturned.style.cursor = 'not-allowed'; // Change cursor to indicate disabled
+        }
+
+        function resetbuttons() {
+            const redCoopButton = document.getElementById('endgame-red-coop-bonus');
+            const blueCoopButton = document.getElementById('endgame-blue-coop-bonus');
+            redCoopButton.disabled = false;
+            redCoopButton.style.backgroundColor = ''; // Reset to default
+            redCoopButton.style.cursor = 'pointer'; // Reset cursor
+            blueCoopButton.disabled = false;
+            blueCoopButton.style.backgroundColor = ''; // Reset to default
+            blueCoopButton.style.cursor = 'pointer'; // Reset cursor
+
+            const redAmpReturned = document.getElementById('endgame-red-amp-returned');
+            const blueAmpReturned = document.getElementById('endgame-blue-amp-returned');
+            redAmpReturned.disabled = false;
+            redAmpReturned.style.backgroundColor = ''; // Reset to default
+            redAmpReturned.style.cursor = 'pointer'; // Reset cursor
+            blueAmpReturned.disabled = false;
+            blueAmpReturned.style.backgroundColor = ''; // Reset to default
+            blueAmpReturned.style.cursor = 'pointer'; // Reset cursor
+        }
+
+        function formatGameTime(timeInSeconds) {
+            const minutes = Math.floor(timeInSeconds / 60);
+            const seconds = timeInSeconds % 60;
+            return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        function showScoreLogOverlay(alliance) {
+            const overlay = document.getElementById('score-log-overlay');
+            const overlayTitle = document.getElementById('score-log-overlay-title');
+            const overlayContent = document.getElementById('score-log-overlay-content');
+            
+            overlayTitle.textContent = `${alliance.charAt(0).toUpperCase() + alliance.slice(1)} Alliance Score Log`;
+            
+            const logData = scoreLog[alliance];
+            let logHTML = '';
+
+            if (logData && logData.length > 0) {
+                logHTML += '<ul style="list-style-type: none; padding-left: 0;">'; // Basic styling for the list
+                logData.forEach((entry, index) => {
+                    logHTML += `<li style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #eee;">
+                                    <span>Time: ${formatGameTime(entry.time)}, Points: ${entry.value}, Game Mode: ${entry.gameMode}, Description: ${entry.description}</span>
+                                    <button class="control-button" style="padding: 3px 8px; font-size: 0.8em;" onclick="removeScoreLogEntry('${alliance}', ${index})">Remove</button>
+                                 </li>`;
+                });
+                logHTML += '</ul>';
+            } else {
+                logHTML = '<p>No scores logged yet for this alliance.</p>';
+            }
+            
+            overlayContent.innerHTML = logHTML;
+            // Assuming .keybind-overlay uses display:flex for centering its content
+            overlay.style.display = 'flex'; 
+        }
+
+        function hideScoreLogOverlay() {
+            const overlay = document.getElementById('score-log-overlay');
+            overlay.style.display = 'none';
+        }
+
+        function removeScoreLogEntry(alliance, index) {
+            if (scoreLog[alliance] && scoreLog[alliance][index]) {
+                const removedEntry = scoreLog[alliance][index];
+                
+                // Adjust total score
+                if (alliance === 'red') {
+                    scores.redPoints -= removedEntry.value;
+                } else if (alliance === 'blue') {
+                    scores.bluePoints -= removedEntry.value;
+                }
+                updateDisplayedScores(); // Update main score displays
+
+                scoreLog[alliance].splice(index, 1);
+                saveToLocalStorage(); // Save changes
+                showScoreLogOverlay(alliance); // Refresh the log display
+                updateGameSummaries();
+            } else {
+                console.error("Attempted to remove a non-existent log entry.");
+            }
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const scoreLogOverlay = document.getElementById('score-log-overlay');
+                if (scoreLogOverlay && scoreLogOverlay.style.display !== 'none') {
+                    hideScoreLogOverlay();
+                }
+                // This allows other Escape key handlers (e.g., for keybind overlay) to function if this one didn't handle it.
+            }
+        });
+
         function saveToLocalStorage() {
             localStorage.setItem('scores', JSON.stringify(scores));
             localStorage.setItem('gameTime', gameTime);
             localStorage.setItem('gameMode', currentMode); // Save the current mode
             localStorage.setItem('matchNumber', matchNumber); // Save the match number
             localStorage.setItem('scoreLog', JSON.stringify(scoreLog)); // Save the score log
+            localStorage.setItem('matchStarted', isMatchRunning);
         }
 
         function addScore(type, value, description = '') {
@@ -366,6 +902,7 @@
             scoreLog[alliance].push({
                 time: gameTime,
                 value: value,
+                gameMode: currentMode,
                 description: description || 'Score added'
             });
 
@@ -394,9 +931,12 @@
             const redCardStatus = type === 'redPoints' ? 'Red Alliance' : 'Blue Alliance';
             localStorage.setItem('redCard', redCardStatus);
 
-            document.getElementById('match-failed').play().catch((error) => {
-                console.error('Audio playback failed:', error);
-            });
+            if(localStorage.getItem('muted') !== 'true') {
+                // Play the match failed sound
+                document.getElementById('match-failed').play().catch((error) => {
+                    console.error('Audio playback failed:', error);
+                });
+            }
 
             saveToLocalStorage();
 
@@ -417,18 +957,16 @@
 
             // Reset scores and timer if switching to "match-ready"
             if (tabId === 'match-ready') {
-                gameTime = 160; // Reset to 2 minutes 40 seconds
+                gameTime = settings.GAME_TIME; // Reset to 2 minutes 40 seconds
                 scores = { redPoints: 0, bluePoints: 0 };
 
                 // Update the UI
-                document.getElementById('game-timer').textContent = 'Time Left: 2:40';
+                document.getElementById('game-timer').textContent = `Time Left: ${getGameTime()}`;
                 document.getElementById('red-score').textContent = 'Red Points: 0';
                 document.getElementById('blue-score').textContent = 'Blue Points: 0';
 
-                // Clear the score log
+                // Clear the score log object
                 scoreLog = { red: [], blue: [] };
-                document.getElementById('red-score-log').innerHTML = '<p>No scores logged yet.</p>';
-                document.getElementById('blue-score-log').innerHTML = '<p>No scores logged yet.</p>';
                 localStorage.removeItem('scoreLog');
 
                 // Clear any disabled buttons
@@ -441,9 +979,27 @@
 
                 // Clear the red card status
                 localStorage.removeItem('redCard');
+
+                isMatchRunning = false; // Reset match running status
+
+                clearInterval(timerInterval);
+
+                resetChecklist();
+            }
+
+            if (tabId === 'game-over') {
+                // Update game summaries when switching to "Game Over"
+                updateGameSummaries();
             }
 
             saveToLocalStorage();
+        }
+
+        // Get Game Time in Minutes and Seconds
+        function getGameTime() {
+            const minutes = Math.floor(gameTime / 60);
+            const seconds = gameTime % 60;
+            return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
         }
 
         function startGameTimer() {
@@ -455,6 +1011,8 @@
 
                     // Clear the red card status when the match ends
                     localStorage.removeItem('redCard');
+
+                    isMatchRunning = false; // Reset match running status
 
                     saveToLocalStorage();
                     return;
@@ -469,11 +1027,11 @@
                 document.getElementById('game-timer').textContent = `Time Left: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 
                 // Handle phase transitions
-                if (gameTime === 130) { // After 30 seconds, switch to auto-to-teleop transition
+                if (gameTime === settings.GAME_TIME - settings.AUTO_PERIOD_DURATION) { // After 30 seconds, switch to auto-to-teleop transition
                     showTab('auto-to-teleop');
-                } else if (gameTime === 120) { // After 40 seconds, switch to teleop
+                } else if (gameTime === settings.GAME_TIME - settings.AUTO_PERIOD_DURATION - 10) { // After 40 seconds, switch to teleop
                     showTab('teleop');
-                } else if (gameTime === 30) { // When 30 seconds remain, switch to endgame
+                } else if (gameTime === settings.ENDGAME_PERIOD_DURATION) { // When 30 seconds remain, switch to endgame
                     showTab('endgame');
                     populateScoreLog(); // Populate score log for endgame
                 }
@@ -489,21 +1047,25 @@
                 return;
             }
 
+            resetbuttons();
+
             // Clear previous scores and logs
             scores = { redPoints: 0, bluePoints: 0 };
-            scoreLog = { red: [], blue: [] };
-            document.getElementById('red-score-log').innerHTML = '<p>No scores logged yet.</p>';
-            document.getElementById('blue-score-log').innerHTML = '<p>No scores logged yet.</p>';
+            scoreLog = { red: [], blue: [] }; // Clear the score log object
             localStorage.removeItem('scoreLog');
 
             //reset the timer
-            gameTime = 160; // Reset to 2 minutes 40 seconds
+            gameTime = settings.GAME_TIME; // Reset to 2 minutes 40 seconds
 
-            document.getElementById('game-timer').textContent = 'Time Left: 2:40';
+            document.getElementById('game-timer').textContent = `Time Left: ${getGameTime()}`
             document.getElementById('red-score').textContent = 'Red Points: 0';
             document.getElementById('blue-score').textContent = 'Blue Points: 0';
 
+            isMatchRunning = true; // Set match running status
+
             saveToLocalStorage();
+
+            viewerScreen('gamescreen');
 
             alert(`Press ok to start match #${matchNumber}. Count Down (3,2,1 Go!)`);
 
@@ -518,7 +1080,7 @@
             clearInterval(timerInterval);
 
             // Reset the timer and scores
-            gameTime = 160; // Reset to 2 minutes 40 seconds
+            gameTime = settings.GAME_TIME; // Reset to 2 minutes 40 seconds
         }
 
         function stopMatch() {
@@ -526,11 +1088,11 @@
             clearInterval(timerInterval);
 
             // Reset the timer and scores
-            gameTime = 160; // Reset to 2 minutes 40 seconds
+            gameTime = settings.GAME_TIME; // Reset to 2 minutes 40 seconds
             scores = { redPoints: 0, bluePoints: 0 };
 
             // Update the UI
-            document.getElementById('game-timer').textContent = 'Time Left: 2:40';
+            document.getElementById('game-timer').textContent = `Time Left: 0:00`;
             document.getElementById('red-score').textContent = 'Red Points: 0';
             document.getElementById('blue-score').textContent = 'Blue Points: 0';
 
@@ -544,6 +1106,9 @@
 
             // Clear the red card status
             localStorage.removeItem('redCard');
+
+            // Indicate Match has stopped
+            isMatchRunning = false;
 
             // Reset the current mode and save to localStorage
             currentMode = 'match-ready';
@@ -737,6 +1302,130 @@
 
         // Call populateScoreLog when the "Game Over" tab is shown
         document.querySelector('.tab[onclick="showTab(\'game-over\')"]').addEventListener('click', populateScoreLog);
+
+        // KEYBINDING FUNCTIONALITY
+        function handleKeyPress(event) {
+            // Ignore key presses if an input field is focused, or contentEditable is true
+            if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.isContentEditable)) {
+                return;
+            }
+            // Also ignore if modifier keys like Ctrl, Alt, Meta are pressed, to avoid conflict with browser shortcuts
+            if (event.ctrlKey || event.altKey || event.metaKey) {
+                return;
+            }
+
+            const key = event.key.toUpperCase();
+            let buttonIdToClick = null;
+
+            // Hot Keys for Viwer Screens
+            if (key === 'C') {
+                viewerScreen('gamescreen');
+                return; // Prevent further processing
+            } else if (key === 'B') {
+                viewerScreen('blankscreen');
+                return; // Prevent further processing
+            } else if (key === 'N') {
+                viewerScreen('summaryscreen');
+                return; // Prevent further processing
+            }
+
+            // Only process game keybinds if a game tab is active
+            if (currentMode !== 'auto' && currentMode !== 'teleop' && currentMode !== 'endgame') {
+                return;
+            }
+
+            switch (currentMode) {
+                case 'auto':
+                    switch (key) {
+                        // Red Auto
+                        case 'Q': buttonIdToClick = 'auto-red-rubble-low'; break;
+                        case 'W': buttonIdToClick = 'auto-red-rubble-high'; break;
+                        case 'E': buttonIdToClick = 'auto-red-low-parking'; break;
+                        case 'A': buttonIdToClick = 'auto-red-penalty-ticket'; break; // Red Penalty -> Blue Score
+                        // Blue Auto
+                        case 'U': buttonIdToClick = 'auto-blue-rubble-low'; break;
+                        case 'I': buttonIdToClick = 'auto-blue-rubble-high'; break;
+                        case 'O': buttonIdToClick = 'auto-blue-low-parking'; break;
+                        case 'L': buttonIdToClick = 'auto-blue-penalty-ticket'; break; // Blue Penalty -> Red Score
+                    }
+                    break;
+                case 'teleop':
+                    switch (key) {
+                        // Red Teleop
+                        case 'Q': buttonIdToClick = 'teleop-red-rubble-low'; break;
+                        case 'W': buttonIdToClick = 'teleop-red-rubble-high'; break;
+                        case 'T': buttonIdToClick = 'teleop-red-orbit'; break;
+                        case 'R': buttonIdToClick = 'teleop-red-orbit-amp'; break;
+                        case 'A': buttonIdToClick = 'teleop-red-penalty-ticket'; break; // Red Penalty -> Blue Score
+                        // Blue Teleop
+                        case 'U': buttonIdToClick = 'teleop-blue-rubble-low'; break;
+                        case 'I': buttonIdToClick = 'teleop-blue-rubble-high'; break;
+                        case 'Y': buttonIdToClick = 'teleop-blue-orbit'; break;
+                        case 'P': buttonIdToClick = 'teleop-blue-orbit-amp'; break;
+                        case 'L': buttonIdToClick = 'teleop-blue-penalty-ticket'; break; // Blue Penalty -> Red Score
+                    }
+                    break;
+                case 'endgame':
+                    switch (key) {
+                        // Red Endgame - Teleop Points
+                        case 'Q': buttonIdToClick = 'endgame-red-teleop-rubble-low'; break;
+                        case 'W': buttonIdToClick = 'endgame-red-teleop-rubble-high'; break;
+                        case 'T': buttonIdToClick = 'endgame-red-teleop-orbit'; break;
+                        case 'R': buttonIdToClick = 'endgame-red-teleop-orbit-amp'; break;
+                        // Red Endgame - End Game Points
+                        case 'S': buttonIdToClick = 'endgame-red-amp-returned'; break;
+                        case 'E': buttonIdToClick = 'endgame-red-low-parking'; break;
+                        case 'F': buttonIdToClick = 'endgame-red-coop-bonus'; break;
+                        case 'A': buttonIdToClick = 'endgame-red-penalty-ticket'; break; // Red Penalty -> Blue Score
+
+                        // Blue Endgame - Teleop Points
+                        case 'U': buttonIdToClick = 'endgame-blue-teleop-rubble-low'; break;
+                        case 'I': buttonIdToClick = 'endgame-blue-teleop-rubble-high'; break;
+                        case 'Y': buttonIdToClick = 'endgame-blue-teleop-orbit'; break;
+                        case 'P': buttonIdToClick = 'endgame-blue-teleop-orbit-amp'; break;
+                        // Blue Endgame - End Game Points
+                        case 'J': buttonIdToClick = 'endgame-blue-amp-returned'; break;
+                        case 'O': buttonIdToClick = 'endgame-blue-low-parking'; break;
+                        case 'M': buttonIdToClick = 'endgame-blue-coop-bonus'; break;
+                        case 'L': buttonIdToClick = 'endgame-blue-penalty-ticket'; break; // Blue Penalty -> Red Score
+                    }
+                    break;
+            }
+
+
+            if (buttonIdToClick) {
+                const button = document.getElementById(buttonIdToClick);
+                if (button && !button.disabled) {
+                    button.click();
+                    event.preventDefault(); // Prevent default action for the key press if it's handled
+                }
+            }
+        }
+        window.addEventListener('keydown', handleKeyPress);
+
+        // Controls Overlay functionality
+        document.getElementById('open-controls-overlay-btn').addEventListener('click', () => {
+            document.getElementById('controls-overlay').style.display = 'flex';
+            document.getElementById('close-controls-overlay-btn').focus();
+        });
+
+        document.getElementById('close-controls-overlay-btn').addEventListener('click', () => {
+            document.getElementById('controls-overlay').style.display = 'none';
+        });
+
+        // Close controls overlay with Esc key
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                document.getElementById('controls-overlay').style.display = 'none';
+            }
+        });
+
+        // Show Keybinds from Controls Overlay
+        document.getElementById('show-keybinds-btn').addEventListener('click', () => {
+            document.getElementById('controls-overlay').style.display = 'none';
+            document.getElementById('keybind-overlay').style.display = 'flex';
+            document.getElementById('close-keybind-overlay-btn').focus();
+        });
     </script>
 </body>
 </html>

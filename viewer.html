@@ -6,6 +6,8 @@
     <title>Score Viewer</title>
     <!-- Link to the local Font Awesome CSS -->
     <link rel="stylesheet" href="assets/font-awesome/css/all.min.css">
+    <link rel="stylesheet" href="assets/orbit-odyssey/orbit-odyssey.css">
+    <script src="settings.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -65,6 +67,89 @@
         .icon {
             font-size: inherit; /* Match the font size of the parent element */
         }
+
+        #winning-results {
+            /* display: none; Initially hidden */
+            /* flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); */
+            width: 100%;
+        }
+
+        #winning-results h2 {
+            margin-top: 0;
+            font-size: 28px;
+            color: #333;
+        }
+
+        #winning-team {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .score-breakdown-row {
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            justify-content: space-evenly;
+        }
+
+        .score-breakdown {
+            width: 48%;
+            padding: 15px;
+            margin-bottom: 0;
+            border-radius: 8px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+
+        .score-breakdown span {
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+
+        #red-score-breakdown {
+            border-right: 20px solid #ff4d4d; /* Red accent */
+        }
+        #red-score-breakdown-points {
+            color: #ff4d4d;
+            font-weight: bold;
+            font-size: 22px;
+        }
+
+
+        #blue-score-breakdown {
+            border-left: 20px solid #4d79ff; /* Blue accent */
+        }
+        #blue-score-breakdown-points {
+            color: #4d79ff;
+            font-weight: bold;
+            font-size: 22px;
+        }
+
+        #red-score-breakdown-game-details,
+        #blue-score-breakdown-game-details {
+            font-size: 16px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        #blue-score-breakdown .oo-icon-small {
+            filter: brightness(0) saturate(100%) invert(50%) sepia(40%) saturate(7094%) hue-rotate(214deg) brightness(105%) contrast(105%);
+        }
+
+        #red-score-breakdown .oo-icon-small {
+            filter: brightness(0) saturate(100%) invert(43%) sepia(82%) saturate(2882%) hue-rotate(334deg) brightness(101%) contrast(103%);
+        }
+
     </style>
 </head>
 <body>
@@ -117,24 +202,45 @@
         </button>
     </div>
 
-    <div class="match-info" id="match-info">
-        <i class="fas fa-info-circle icon"></i> Match: Waiting to Start
-    </div>
-    <div class="timer" id="game-timer">
-        <i class="fas fa-clock icon"></i> 2:30
-    </div>
-    <div class="mode" id="game-mode">
-        <i class="fas fa-gamepad icon"></i> Auto
-    </div>
-    <div id="red-card" style="display: none; font-size: 24px; font-weight: bold; color: #FF0000; margin-bottom: 20px;">
-        <!-- Red card status will be displayed here -->
-    </div>
-    <div class="scoreboard">
-        <div class="score red" id="red-score">
-            <i class="fas fa-flag icon"></i> Red Points: 0
+    <div id="match-running-info" style="display: none;">
+        <div class="match-info" id="match-info">
+            <i class="fas fa-info-circle icon"></i> Match: Waiting to Start
         </div>
-        <div class="score blue" id="blue-score">
-            <i class="fas fa-flag icon"></i> Blue Points: 0
+        <div class="timer" id="game-timer">
+            <i class="fas fa-clock icon"></i> 2:30
+        </div>
+        <div class="mode" id="game-mode">
+            <i class="fas fa-gamepad icon"></i> Auto
+        </div>
+        <div id="red-card" style="display: none; font-size: 24px; font-weight: bold; color: #FF0000; margin-bottom: 20px;">
+            <!-- Red card status will be displayed here -->
+        </div>
+        
+        <div class="scoreboard">
+            <div class="score red" id="red-score">
+                <i class="fas fa-flag icon"></i> Red Points: 0
+            </div>
+            <div class="score blue" id="blue-score">
+                <i class="fas fa-flag icon"></i> Blue Points: 0
+            </div>
+        </div>
+    </div>
+    
+    
+
+    <div id="winning-results" style="display: none;">
+        <h2 id="winning-team"></h2>
+        <div class="score-breakdown-row">
+            <div id="red-score-breakdown" class="score-breakdown">
+                <!-- Score Break Down -->
+                <span id="red-score-breakdown-points"><i class="fas fa-flag icon"></i> Red Points: 0</span>
+                <span id="red-score-breakdown-game-details"></span>
+            </div>
+            <div id="blue-score-breakdown" class="score-breakdown">
+                <!-- Score Break Down -->
+                <span id="blue-score-breakdown-points"><i class="fas fa-flag icon"></i> Blue Points: 0</span>
+                <span id="blue-score-breakdown-game-details"></span>
+            </div>
         </div>
     </div>
 
@@ -146,6 +252,7 @@
     <audio id="match-failed" src="assets/sounds/match-failed.mp3"></audio>
 
     <script>
+        /* let settings = {}; // Initialize settings object */
         let lastMode = '';
         let userInteracted = false;
 
@@ -162,10 +269,46 @@
             }
         });
 
+        /* async function loadViewerSettings() {
+            try {
+                const response = await fetch('settings.json'); // Only works if using a server or local server
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                settings = await response.json();
+                console.log('Viewer settings loaded:', settings);
+                // Initial call to update display with loaded settings
+                updateScoresAndTime();
+            } catch (error) {
+                console.error("Could not load viewer settings:", error);
+                // Fallback or default settings can be defined here if loading fails // 160
+                settings = {
+                    GAME_TIME: 80,
+                    AUTO_PERIOD_DURATION: 30,
+                    ENDGAME_PERIOD_DURATION: 30
+                    // Add other necessary fallback settings if any
+                };
+                console.log('Using fallback viewer settings:', settings);
+                updateScoresAndTime();
+            }
+        } */
+
+        // Load viewer settings on page load
+        window.onload = () => {
+            updateScoresAndTime();
+        };
+
         function playSoundForMode(mode) {
             if (!userInteracted) return; // Prevent playback if no interaction
             if (mode === lastMode) return; // Prevent replaying the same sound
             lastMode = mode;
+
+            //Get Local Storage for Muted
+            if (localStorage.getItem('muted') === 'true') {
+                console.log('Audio is muted, not playing sound for mode:', mode);
+                flashBackgroundForMode(mode); // Flash background when mode changes
+                return;
+            }
 
             console.log('Playing sound for mode:', mode); // Debug mode
 
@@ -246,12 +389,71 @@
             }
         }
 
+        let gameOverToggle = false;
+
+        let viewerscreen;
+
         function updateScoresAndTime() {
+
+            //Change Viwer Screen
+            viewerScreen = localStorage.getItem('viewerScreen') || 'gamescreen';
+
+            if (viewerScreen === 'gamescreen') {
+                document.getElementById('match-running-info').style.display = 'block';
+                document.getElementById('winning-results').style.display = 'none';
+            } else if (viewerScreen === 'summaryscreen') {
+                document.getElementById('match-running-info').style.display = 'none';
+                document.getElementById('winning-results').style.display = 'block';
+            } else if (viewerScreen === 'blankscreen') {
+                document.getElementById('match-running-info').style.display = 'none';
+                document.getElementById('winning-results').style.display = 'none';
+            }
+
             const scores = JSON.parse(localStorage.getItem('scores')) || { redPoints: 0, bluePoints: 0 };
-            let gameTime = localStorage.getItem('gameTime') || 150;
+
+            let redSummary = "";
+            let blueSummary = "";
+
+            let winningTeam = localStorage.getItem('winner') || 'Tie';
+
+            if (winningTeam === 'red') {
+                document.getElementById('winning-team').innerHTML = `<i class="fas fa-trophy icon"></i> Winning Team: Red`;
+            } else if (winningTeam === 'blue') {
+                document.getElementById('winning-team').innerHTML = `<i class="fas fa-trophy icon"></i> Winning Team: Blue`;
+            } else {
+                document.getElementById('winning-team').innerHTML = `<i class="fas fa-equals icon"></i> Match Result: Tie`;
+            }
+
+            if (localStorage.getItem('redSummary')) {
+                redSummary = localStorage.getItem('redSummary');
+            }
+
+            if (localStorage.getItem('blueSummary')) {
+                blueSummary = localStorage.getItem('blueSummary');
+            }
+
+            document.getElementById('red-score-breakdown-game-details').innerHTML = redSummary;
+            document.getElementById('blue-score-breakdown-game-details').innerHTML = blueSummary;
+
+            document.getElementById('red-score-breakdown-points').innerHTML = `<i class="fas fa-flag icon"></i> Red Points: ${scores.redPoints}`;
+            document.getElementById('blue-score-breakdown-points').innerHTML = `<i class="fas fa-flag icon"></i> Blue Points: ${scores.bluePoints}`;
+            
+            
+            //Boolean to check if the game is running
+            let isGameRunning = localStorage.getItem('matchStarted') === 'true';
+
+            if(isGameRunning === null) {
+                isGameRunning = false; // Default to true if not set
+            }
+
+            let gameTime = localStorage.getItem('gameTime') || 150; //150
             let gameMode = localStorage.getItem('gameMode') || 'auto';
             const matchNumber = localStorage.getItem('matchNumber') || 'Waiting to Start';
             const redCard = localStorage.getItem('redCard') || null;
+
+            if(gameTime > 0) {
+                gameOverToggle = false;
+            }
 
             if (gameMode == "auto-to-teleop") {
                 gameMode = "Pick Up Your Controllers!";
@@ -259,6 +461,13 @@
                 gameMode = "Match Ready";
             } else if (gameMode == "game-over") {
                 gameMode = "Game Over";
+
+                if (!gameOverToggle) {
+                    isGameRunning = true;
+                    gameOverToggle = true;
+                } else {
+                    isGameRunning = false;
+                }
             }
 
             let gameModeIcon = `<i class="fas fa-gamepad icon"></i>`;
@@ -275,22 +484,10 @@
 
             // Countdown Adjustment for modes
             if (gameMode == "auto") {
-                gameTime = gameTime - 130 // Auto time is 30 seconds
+                gameTime = gameTime - (settings.GAME_TIME - settings.AUTO_PERIOD_DURATION); // Auto time is 30 seconds
             } else if (gameMode == "Pick Up Your Controllers!") {
-                gameTime = gameTime - 120; // auto-to-teleop time is 10 seconds
+                gameTime = gameTime - (settings.GAME_TIME - settings.AUTO_PERIOD_DURATION - 10); // auto-to-teleop time is 10 seconds
             }
-            
-
-            document.getElementById('red-score').innerHTML = `<i class="fas fa-flag icon"></i> Red Points: ${scores.redPoints}`;
-            document.getElementById('blue-score').innerHTML = `<i class="fas fa-flag icon"></i> Blue Points: ${scores.bluePoints}`;
-
-            const minutes = Math.floor(gameTime / 60);
-            const seconds = gameTime % 60;
-            document.getElementById('game-timer').innerHTML = `<i class="fas fa-clock icon"></i> ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-
-            document.getElementById('game-mode').innerHTML = `${gameModeIcon} ${gameMode.charAt(0).toUpperCase() + gameMode.slice(1)}`;
-
-            document.getElementById('match-info').innerHTML = `<i class="fas fa-info-circle icon"></i> Match: ${matchNumber}`;
 
             // Display red card status if present
             const redCardElement = document.getElementById('red-card');
@@ -300,6 +497,32 @@
             } else {
                 redCardElement.style.display = 'none';
             }
+
+            document.getElementById('match-info').innerHTML = `<i class="fas fa-info-circle icon"></i> Match: ${matchNumber}`;
+
+            if (!isGameRunning) {
+                if(gameMode == "Match Ready") {
+                    document.getElementById('game-mode').innerHTML = `${gameModeIcon} ${gameMode.charAt(0).toUpperCase() + gameMode.slice(1)}`;
+                }
+
+                if(scores.redPoints == 0 && scores.bluePoints == 0) {
+                    document.getElementById('red-score').innerHTML = `<i class="fas fa-flag icon"></i> Red Points: ${scores.redPoints}`;
+                    document.getElementById('blue-score').innerHTML = `<i class="fas fa-flag icon"></i> Blue Points: ${scores.bluePoints}`;
+                }
+
+                document.getElementById('game-timer').innerHTML = `<i class="fas fa-clock icon"></i> 0:00`;
+                
+                return; // Do not update if the game is not running
+            }
+
+            const minutes = Math.floor(gameTime / 60);
+            const seconds = gameTime % 60;
+            document.getElementById('game-timer').innerHTML = `<i class="fas fa-clock icon"></i> ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+            document.getElementById('game-mode').innerHTML = `${gameModeIcon} ${gameMode.charAt(0).toUpperCase() + gameMode.slice(1)}`;
+
+            document.getElementById('red-score').innerHTML = `<i class="fas fa-flag icon"></i> Red Points: ${scores.redPoints}`;
+            document.getElementById('blue-score').innerHTML = `<i class="fas fa-flag icon"></i> Blue Points: ${scores.bluePoints}`;
 
             if (gameMode == "Pick Up Your Controllers!") {
                 gameMode = "autoToTeleop";
